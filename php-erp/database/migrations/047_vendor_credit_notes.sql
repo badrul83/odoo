@@ -1,0 +1,42 @@
+CREATE TABLE IF NOT EXISTS vendor_credit_note_sequences (
+    company_id BIGINT UNSIGNED NOT NULL,
+    sequence_year SMALLINT UNSIGNED NOT NULL,
+    last_number BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (company_id, sequence_year),
+    CONSTRAINT fk_vendor_credit_note_sequence_company FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS vendor_credit_notes (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    company_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(40) NOT NULL,
+    vendor_bill_id BIGINT UNSIGNED NOT NULL,
+    partner_contact_id BIGINT UNSIGNED NOT NULL,
+    journal_id BIGINT UNSIGNED NOT NULL,
+    currency_code CHAR(3) NOT NULL,
+    credit_date DATE NOT NULL,
+    reason VARCHAR(190) NOT NULL,
+    amount DECIMAL(20,6) NOT NULL,
+    state VARCHAR(16) NOT NULL DEFAULT 'draft',
+    accounting_move_id BIGINT UNSIGNED NULL,
+    created_by BIGINT UNSIGNED NOT NULL,
+    posted_by BIGINT UNSIGNED NULL,
+    posted_at DATETIME NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_vendor_credit_note_company_name (company_id, name),
+    UNIQUE KEY uq_vendor_credit_note_move (accounting_move_id),
+    KEY idx_vendor_credit_note_bill (company_id, vendor_bill_id, state, id),
+    KEY idx_vendor_credit_note_partner (company_id, partner_contact_id, credit_date, id),
+    CONSTRAINT fk_vendor_credit_note_company FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_vendor_credit_note_bill FOREIGN KEY (vendor_bill_id) REFERENCES vendor_bills (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_vendor_credit_note_partner FOREIGN KEY (partner_contact_id) REFERENCES contacts (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_vendor_credit_note_journal FOREIGN KEY (journal_id) REFERENCES accounting_journals (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_vendor_credit_note_currency FOREIGN KEY (currency_code) REFERENCES currencies (currency_code) ON DELETE RESTRICT,
+    CONSTRAINT fk_vendor_credit_note_move FOREIGN KEY (accounting_move_id) REFERENCES accounting_moves (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_vendor_credit_note_creator FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_vendor_credit_note_poster FOREIGN KEY (posted_by) REFERENCES users (id) ON DELETE RESTRICT,
+    CONSTRAINT chk_vendor_credit_note_state CHECK (state IN ('draft','posted','cancelled')),
+    CONSTRAINT chk_vendor_credit_note_amount CHECK (amount > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

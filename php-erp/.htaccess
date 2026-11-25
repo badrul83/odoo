@@ -1,0 +1,19 @@
+Options -Indexes
+
+# Keep deployment configuration and internal project notes out of HTTP access.
+<FilesMatch "^(?:\.|README\.md$)">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# The project root may be below htdocs in local XAMPP installs. Only /public is
+# intended to be web reachable; block application code, migrations and workers.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(?:app|bin|database|storage|logs)(?:/|$) - [F,L,NC]
+</IfModule>

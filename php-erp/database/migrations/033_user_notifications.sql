@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS user_notifications (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    company_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    type_key VARCHAR(64) NOT NULL,
+    title VARCHAR(190) NOT NULL,
+    body VARCHAR(500) NOT NULL DEFAULT '',
+    resource_model VARCHAR(80) NOT NULL,
+    resource_record_id BIGINT UNSIGNED NOT NULL,
+    dedupe_key VARCHAR(190) NOT NULL,
+    created_at DATETIME NOT NULL,
+    read_at DATETIME NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_user_notification_dedupe (user_id, dedupe_key),
+    KEY idx_user_notification_inbox (user_id, read_at, created_at, id),
+    KEY idx_user_notification_company (company_id, user_id, created_at),
+    CONSTRAINT fk_user_notification_company FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_user_notification_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT,
+    CONSTRAINT chk_user_notification_resource CHECK (resource_record_id > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, charset=utf-8">
+<link rel="stylesheet" type="text/css" href="main.css">
+<script type="text/javascript">
+function zoomToggle(num)
+{
+  var img = document.getElementById("ss-" + num);
+  
+  if (img.className == "screenshot") {
+    img.className = "screenshot-thumb";
+  }
+  else {
+    img.className = "screenshot";
+  }
+  
+  return false;
+}
+
+function AddComment(index)
+{
+    // Hide user's previous comment, "Add Comment" and "Update Comment" buttons.
+    document.getElementById("AddCommentButtonId" + index).style.display = 'none';
+    document.getElementById("UpdateCommentButtonId" + index).style.display = 'none';
+    document.getElementById("CommentTextId" + index).style.display = 'none';
+
+    // Empty text input box.
+    document.getElementById("CommentInputText" + index).value = '';
+
+    // Display text input box, OK and Cancel buttons.
+    document.getElementById("CommentInputEntityItemId" + index).style.display = 'inline';
+}
+
+function AddCommentA11yFixes(index)
+{
+    // Please note this function is only for MomentFeature_StepsRecorderA11yFixes_v01.
+    // Hide user's previous comment, "Add Comment" and "Update Comment" buttons.
+    document.getElementById("AddCommentButtonId" + index).style.display = 'none';
+    document.getElementById("UpdateCommentButtonId" + index).style.display = 'none';
+    document.getElementById("CommentTextId" + index).style.display = 'none';
+
+    // Empty text input box.
+    document.getElementById("CommentInputText" + index).value = '';
+
+    // Display text input box, OK and Cancel buttons.
+    document.getElementById("CommentInputEntityItemId" + index).style.display = 'inline';
+
+    // Set focus on text input box.
+    document.getElementById("CommentInputText" + index).focus();
+}
+
+function AddCommentOK(index)
+{
+    // Display user's comment.
+    document.getElementById("CommentTextId" + index).style.display = 'inline';
+    document.getElementById("CommentTextId" + index).innerText = document.getElementById("CommentInputText" + index).value;
+
+    // Display "Add Comment" or "Update Comment" button.
+    if (document.getElementById("CommentTextId" + index).innerText)
+    {
+        document.getElementById("UpdateCommentButtonId" + index).style.display = 'inline';
+    }
+    else
+    {
+        document.getElementById("AddCommentButtonId" + index).style.display = 'inline';
+    }
+
+    // Hide text input box, OK and Cancel buttons.
+    document.getElementById("CommentInputEntityItemId" + index).style.display = 'none';
+}
+
+function AddCommentCancel(index)
+{
+    // Hide text input box, OK and Cancel buttons.
+    document.getElementById("CommentInputEntityItemId" + index).style.display = 'none';
+
+    // Display user's previous comment if there is one.
+    document.getElementById("CommentTextId" + index).style.display = 'inline';
+
+    // Display "Add Comment" or "Update Comment" button.
+    if (document.getElementById("CommentTextId" + index).innerText)
+    {
+        document.getElementById("UpdateCommentButtonId" + index).style.display = 'inline';
+    }
+    else
+    {
+        document.getElementById("AddCommentButtonId" + index).style.display = 'inline';
+    }
+}
+
+</script>
+<title id="m1">Recorded Steps</title>
+</head>
+<body>
+<!-- This is the recorded XML data that was used in generating this page. -->
+<xml id="recordeddata">
+<script id="myXML" type="text/xml">
+<?xml version="1.0" encoding="UTF-8"?>
+<Report>
+  <System MajorVersion="10" MinorVersion="0" ServicePackMajor="0" ServicePackMinor="0" BuildNumber="26300" Sku="48" Platform="2" />
+  <UserActionData>
+    <RecordSession SessionCount="1" StartTime="8:06:34 PM" StopTime="8:07:35 PM" ActionCount="24" MissedActionCount="0">
+      <EachAction ActionNumber="1" Time="8:06:41 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Invoices (document)" in "Invoices - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>288,182</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Invoices" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Invoices - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Invoices - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0001.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="2" Time="8:06:48 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Invoices (document)" in "Invoices - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>42,195</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="16,177,127,33" ClassName="d-contents" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Invoices" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Invoices - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Invoices - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0002.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="3" Time="8:06:56 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Journal Items (tab item)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>211,509</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="152,498,117,40" ClassName="nav-link" ControlType="50019" FrameworkId="Chrome" Name="Journal Items" LocalizedControlType="tab item" />
+          <Level BoundingRectangle="152,498,117,39" ClassName="nav-item flex-nowrap" ControlType="50007" FrameworkId="Chrome" Name="Journal Items" LocalizedControlType="list item" />
+          <Level BoundingRectangle="17,498,1231,40" ClassName="nav nav-tabs flex-row flex-nowrap" ControlType="50008" FrameworkId="Chrome" LocalizedControlType="list" />
+          <Level BoundingRectangle="17,498,1231,40" ClassName="o_notebook_headers" ControlType="50018" FrameworkId="Chrome" LocalizedControlType="tab" />
+          <Level BoundingRectangle="16,270,1233,634" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0003.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="4" Time="8:06:57 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Other Info (tab item)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>328,522</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="267,498,99,40" ClassName="nav-link" ControlType="50019" FrameworkId="Chrome" Name="Other Info" LocalizedControlType="tab item" />
+          <Level BoundingRectangle="267,498,99,39" ClassName="nav-item flex-nowrap" ControlType="50007" FrameworkId="Chrome" Name="Other Info" LocalizedControlType="list item" />
+          <Level BoundingRectangle="17,498,1231,40" ClassName="nav nav-tabs flex-row flex-nowrap" ControlType="50008" FrameworkId="Chrome" LocalizedControlType="list" />
+          <Level BoundingRectangle="17,498,1231,40" ClassName="o_notebook_headers" ControlType="50018" FrameworkId="Chrome" LocalizedControlType="tab" />
+          <Level BoundingRectangle="16,270,1233,518" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0004.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="5" Time="8:07:00 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Draft Invoice (document)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>237,643</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level AutomationId="ref_2" BoundingRectangle="195,621,422,25" ClassName="o_input" ControlType="50004" FrameworkId="Chrome" LocalizedControlType="edit" />
+          <Level BoundingRectangle="195,621,422,25" ClassName="o_field_widget o_field_char" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="195,621,422,30" ClassName="o_cell o_cell_custom mb-3 mb-md-0" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="41,537,1183,357" ClassName="o_notebook_content tab-content" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="tab panel" />
+          <Level BoundingRectangle="16,270,1233,649" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0005.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="6" Time="8:07:02 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Salesperson (combo box)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>207,678</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level AutomationId="invoice_user_id_0" BoundingRectangle="195,658,422,25" ClassName="o-autocomplete--input o_input pe-3 text-truncate" ControlType="50003" FrameworkId="Chrome" Name="Salesperson" LocalizedControlType="combo box" />
+          <Level BoundingRectangle="195,658,422,25" ClassName="o-autocomplete dropdown" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="195,658,422,25" ClassName="o_input_dropdown" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="195,658,422,27" ClassName="o_cell o_wrap_input text-break mb-3 mb-md-0" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="41,537,1183,357" ClassName="o_notebook_content tab-content" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="tab panel" />
+          <Level BoundingRectangle="16,270,1233,649" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0006.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="7" Time="8:07:04 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Draft Invoice (document)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>172,907</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0007.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="8" Time="8:07:05 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Draft Invoice (document)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>230,775</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0008.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="9" Time="8:07:07 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Delivery Date (edit)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>204,819</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level AutomationId="delivery_date_1" BoundingRectangle="195,803,422,25" ClassName="o_input cursor-pointer user-select-none" ControlType="50004" FrameworkId="Chrome" Name="Delivery Date" LocalizedControlType="edit" />
+          <Level BoundingRectangle="195,803,422,30" ClassName="o_cell o_wrap_input text-break mb-3 mb-md-0" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="41,537,1183,357" ClassName="o_notebook_content tab-content" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="tab panel" />
+          <Level BoundingRectangle="16,270,1233,649" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0009.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="10" Time="8:07:08 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Draft Invoice (document)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>225,869</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="41,537,1183,357" ClassName="o_notebook_content tab-content" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="tab panel" />
+          <Level BoundingRectangle="16,270,1233,649" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0010.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="11" Time="8:07:09 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Draft Invoice (document)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>223,850</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="41,537,1183,357" ClassName="o_notebook_content tab-content" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="tab panel" />
+          <Level BoundingRectangle="16,270,1233,649" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0011.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="12" Time="8:07:11 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Draft Invoice (document)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>239,882</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="41,537,1183,357" ClassName="o_notebook_content tab-content" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="tab panel" />
+          <Level BoundingRectangle="16,270,1233,649" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0012.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="13" Time="8:07:14 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Draft Invoice (document)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>838,642</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="41,537,1183,357" ClassName="o_notebook_content tab-content" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="tab panel" />
+          <Level BoundingRectangle="16,270,1233,649" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0013.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="14" Time="8:07:15 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Draft Invoice (document)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>760,673</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="41,537,1183,357" ClassName="o_notebook_content tab-content" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="tab panel" />
+          <Level BoundingRectangle="16,270,1233,649" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0014.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="15" Time="8:07:16 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Incoterm? (combo box)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>782,660</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level AutomationId="invoice_incoterm_id_0" BoundingRectangle="779,658,445,25" ClassName="o-autocomplete--input o_input pe-3 text-truncate" ControlType="50003" FrameworkId="Chrome" Name="Incoterm?" LocalizedControlType="combo box" />
+          <Level BoundingRectangle="779,658,445,25" ClassName="o-autocomplete dropdown" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="779,658,445,25" ClassName="o_input_dropdown" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="779,658,445,30" ClassName="o_cell o_wrap_input text-break mb-3 mb-md-0" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="41,537,1183,357" ClassName="o_notebook_content tab-content" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="tab panel" />
+          <Level BoundingRectangle="16,270,1233,649" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0015.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="16" Time="8:07:20 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Draft Invoice (document)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>833,916</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0016.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="17" Time="8:07:24 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Draft Invoice (document)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>1419,173</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client modal-open" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0017.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="18" Time="8:07:25 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Incoterm Location (edit)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>884,714</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level AutomationId="incoterm_location_0" BoundingRectangle="779,695,445,25" ClassName="o_input" ControlType="50004" FrameworkId="Chrome" Name="Incoterm Location" LocalizedControlType="edit" />
+          <Level BoundingRectangle="779,695,445,25" ClassName="o_field_widget o_field_char" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="779,695,445,30" ClassName="o_cell o_wrap_input text-break mb-3 mb-md-0" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="41,537,1183,357" ClassName="o_notebook_content tab-content" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="tab panel" />
+          <Level BoundingRectangle="16,270,1233,649" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0018.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="19" Time="8:07:27 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Incoterm Location (edit)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>877,706</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level AutomationId="incoterm_location_0" BoundingRectangle="779,695,445,25" ClassName="o_input" ControlType="50004" FrameworkId="Chrome" Name="Incoterm Location" LocalizedControlType="edit" />
+          <Level BoundingRectangle="779,695,445,25" ClassName="o_field_widget o_field_char" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="779,695,445,30" ClassName="o_cell o_wrap_input text-break mb-3 mb-md-0" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="41,537,1183,357" ClassName="o_notebook_content tab-content" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="tab panel" />
+          <Level BoundingRectangle="16,270,1233,649" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0019.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="20" Time="8:07:28 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Fiscal Position? (combo box)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>799,754</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level AutomationId="fiscal_position_id_0" BoundingRectangle="779,732,445,25" ClassName="o-autocomplete--input o_input pe-3 text-truncate" ControlType="50003" FrameworkId="Chrome" Name="Fiscal Position?" LocalizedControlType="combo box" />
+          <Level BoundingRectangle="779,732,445,25" ClassName="o-autocomplete dropdown" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="779,732,445,25" ClassName="o_input_dropdown" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="779,732,445,30" ClassName="o_cell o_wrap_input text-break mb-3 mb-md-0" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="41,537,1183,357" ClassName="o_notebook_content tab-content" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="tab panel" />
+          <Level BoundingRectangle="16,270,1233,649" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0020.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="21" Time="8:07:29 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Draft Invoice (document)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>786,858</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="41,537,1183,357" ClassName="o_notebook_content tab-content" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="tab panel" />
+          <Level BoundingRectangle="16,270,1233,649" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0021.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="22" Time="8:07:30 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Draft Invoice (document)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>861,768</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="41,537,1183,357" ClassName="o_notebook_content tab-content" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="tab panel" />
+          <Level BoundingRectangle="16,270,1233,649" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0022.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="23" Time="8:07:31 PM" Pid="4400" ProgramId="000008bb46118c19a3586d40195372bf15df00000904" FileId="00007f3d7313e21ab3bf2b26eb31106d2da7ff797388" FileVersion="158.0.8127.37" FileDescription="Google Chrome" FileCompany="Google LLC" FileName="CHROME.EXE" CommandLine="CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR">
+        <Description>User left click on "Draft Invoice (document)" in "Draft Invoice - Google Chrome"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>819,825</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level BoundingRectangle="41,537,1183,357" ClassName="o_notebook_content tab-content" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="tab panel" />
+          <Level BoundingRectangle="16,270,1233,649" ClassName="o_form_sheet position-relative" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,229,1920,803" ClassName="o_content" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="main" />
+          <Level BoundingRectangle="0,167,1920,865" ClassName="o_action_manager" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="o_web_client" ControlType="50026" FrameworkId="Chrome" LocalizedControlType="group" />
+          <Level AutomationId="RootWebArea" BoundingRectangle="0,121,1920,911" ControlType="50030" FrameworkId="Chrome" Name="Draft Invoice" LocalizedControlType="document" />
+          <Level AutomationId="396685" BoundingRectangle="0,121,1920,911" ClassName="Chrome_RenderWidgetHostHWND" ControlType="50033" FrameworkId="Win32" Name="Chrome Legacy Window" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,121,1920,911" ClassName="Chrome_WidgetWin_1" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,120,1920,912" ClassName="MultiContentsView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserFrameViewWin" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="NonClientView" ControlType="50033" FrameworkId="Chrome" LocalizedControlType="region" />
+          <Level BoundingRectangle="0,0,1920,1032" ClassName="BrowserRootView" ControlType="50033" FrameworkId="Chrome" Name="Draft Invoice - Google Chrome - S M Badrul" LocalizedControlType="region" />
+          <Level BoundingRectangle="-8,-8,1936,1048" ClassName="Chrome_WidgetWin_1" ControlType="50032" FrameworkId="Win32" Name="Draft Invoice - Google Chrome" LocalizedControlType="window" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0023.JPEG</ScreenshotFileName>
+      </EachAction>
+      <EachAction ActionNumber="24" Time="8:07:33 PM" Pid="6860" ProgramId="0000f519feec486de87ed73cb92d3cac802400000000" FileId="0000644e41383d8e1915c6f647843767926b99212f30" FileVersion="10.0.26100.10068 (WinBuild.160101.0800)" FileDescription="Windows Explorer" FileCompany="Microsoft Corporation" FileName="EXPLORER.EXE" CommandLine="EXPLORER.EXE">
+        <Description>User left click on "Steps Recorder - 1 running window (button)"</Description>
+        <Action>Mouse Left Click</Action>
+        <CursorCoordsXY>1262,1056</CursorCoordsXY>
+        <ScreenCoordsXYWH>0,0,1920,1080</ScreenCoordsXYWH>
+        <UIAStack>
+          <Level AutomationId="Appid: {1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\psr.exe" BoundingRectangle="1249,1032,44,48" ClassName="Taskbar.TaskListButtonAutomationPeer" ControlType="50000" FrameworkId="XAML" Name="Steps Recorder - 1 running window" LocalizedControlType="button" />
+          <Level AutomationId="TaskbarFrameRepeater" BoundingRectangle="6,1032,1287,48" ControlType="50026" FrameworkId="XAML" LocalizedControlType="group" />
+          <Level AutomationId="TaskbarFrame" BoundingRectangle="0,1032,1920,48" ClassName="Taskbar.TaskbarFrameAutomationPeer" ControlType="50033" FrameworkId="XAML" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,1032,1920,48" ClassName="Windows.UI.Input.InputSite.WindowClass" ControlType="50033" FrameworkId="XAML" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,1032,1920,48" ClassName="Windows.UI.Composition.DesktopWindowContentBridge" ControlType="50033" FrameworkId="Win32" Name="DesktopWindowXamlSource" LocalizedControlType="pane" />
+          <Level BoundingRectangle="0,1032,1920,48" ClassName="Shell_TrayWnd" ControlType="50033" FrameworkId="Win32" Name="Taskbar" LocalizedControlType="pane" />
+        </UIAStack>
+        <ScreenshotFileName>screenshot0024.JPEG</ScreenshotFileName>
+      </EachAction>
+    </RecordSession>
+  </UserActionData>
+</Report>
+</script>
+</xml>
+<div id="ReportTop" tabindex="0">
+    <h1 id="m2" title="Recorded Steps">Recorded Steps</h1>
+    <hr aria-hidden="true" />
+    <p id="m3">
+        This file contains all the steps and information that was recorded to
+        help you describe the recorded steps to others.
+    </p>
+    <p id="m4">
+        Before sharing this file, you should verify the following:
+    </p>
+    <ul>
+        <li id="m5">
+            The steps below accurately describe the recording.
+        </li>
+        <li id="m6">
+            There is no information below or on any screenshots that you do
+            not want others to see.
+        </li>
+    </ul>
+    <p id="m7">
+        Passwords or any other text you typed were not recorded, except for function
+        and shortcut keys that you used.
+    </p>    
+    
+    <p id="m8">
+        You can do the following:
+    </p>
+    <ul>
+        <li id="m9" title="Review the recorded steps">
+            <a href="#Steps">Review the recorded steps</a>
+        </li>
+        
+        <li id="m10" title="Review the recorded steps as a slide show">
+            <a href="slide0001.htm">Review the recorded steps as a slide show</a>
+        </li>
+        
+        <li id="m11" title="Review the additional details">
+            <a href="#AdditionalDetails">Review the additional details</a>
+        </li>
+    </ul>
+    <hr aria-hidden="true" />
+</div>
+ 
+<div id="Steps" tabindex="0">
+    <h1 id="m12" title="Steps">Steps</h1>
+    <hr aria-hidden="true" />
+
+    
+    <div id="Step1" title="Step1 ‎24-‎Nov-‎26 8:06:41 PM User left click on &quot;Invoices (document)&quot; in &quot;Invoices - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            
+            <a title="Next" href="#Step2">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 1: (‎24-‎Nov-‎26 8:06:41 PM)</b> User left click on &quot;Invoices (document)&quot; in &quot;Invoices - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(1)"><img id="ss-1" class="screenshot-thumb" alt="Step 1 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0001.JPEG"><span class="accessible-text">Step 1 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step2" title="Step2 ‎24-‎Nov-‎26 8:06:48 PM User left click on &quot;Invoices (document)&quot; in &quot;Invoices - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step1">Previous</a>
+            <a title="Next" href="#Step3">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 2: (‎24-‎Nov-‎26 8:06:48 PM)</b> User left click on &quot;Invoices (document)&quot; in &quot;Invoices - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(2)"><img id="ss-2" class="screenshot-thumb" alt="Step 2 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0002.JPEG"><span class="accessible-text">Step 2 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step3" title="Step3 ‎24-‎Nov-‎26 8:06:56 PM User left click on &quot;Journal Items (tab item)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step2">Previous</a>
+            <a title="Next" href="#Step4">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 3: (‎24-‎Nov-‎26 8:06:56 PM)</b> User left click on &quot;Journal Items (tab item)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(3)"><img id="ss-3" class="screenshot-thumb" alt="Step 3 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0003.JPEG"><span class="accessible-text">Step 3 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step4" title="Step4 ‎24-‎Nov-‎26 8:06:57 PM User left click on &quot;Other Info (tab item)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step3">Previous</a>
+            <a title="Next" href="#Step5">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 4: (‎24-‎Nov-‎26 8:06:57 PM)</b> User left click on &quot;Other Info (tab item)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(4)"><img id="ss-4" class="screenshot-thumb" alt="Step 4 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0004.JPEG"><span class="accessible-text">Step 4 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step5" title="Step5 ‎24-‎Nov-‎26 8:07:00 PM User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step4">Previous</a>
+            <a title="Next" href="#Step6">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 5: (‎24-‎Nov-‎26 8:07:00 PM)</b> User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(5)"><img id="ss-5" class="screenshot-thumb" alt="Step 5 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0005.JPEG"><span class="accessible-text">Step 5 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step6" title="Step6 ‎24-‎Nov-‎26 8:07:02 PM User left click on &quot;Salesperson (combo box)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step5">Previous</a>
+            <a title="Next" href="#Step7">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 6: (‎24-‎Nov-‎26 8:07:02 PM)</b> User left click on &quot;Salesperson (combo box)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(6)"><img id="ss-6" class="screenshot-thumb" alt="Step 6 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0006.JPEG"><span class="accessible-text">Step 6 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step7" title="Step7 ‎24-‎Nov-‎26 8:07:04 PM User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step6">Previous</a>
+            <a title="Next" href="#Step8">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 7: (‎24-‎Nov-‎26 8:07:04 PM)</b> User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(7)"><img id="ss-7" class="screenshot-thumb" alt="Step 7 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0007.JPEG"><span class="accessible-text">Step 7 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step8" title="Step8 ‎24-‎Nov-‎26 8:07:05 PM User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step7">Previous</a>
+            <a title="Next" href="#Step9">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 8: (‎24-‎Nov-‎26 8:07:05 PM)</b> User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(8)"><img id="ss-8" class="screenshot-thumb" alt="Step 8 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0008.JPEG"><span class="accessible-text">Step 8 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step9" title="Step9 ‎24-‎Nov-‎26 8:07:07 PM User left click on &quot;Delivery Date (edit)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step8">Previous</a>
+            <a title="Next" href="#Step10">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 9: (‎24-‎Nov-‎26 8:07:07 PM)</b> User left click on &quot;Delivery Date (edit)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(9)"><img id="ss-9" class="screenshot-thumb" alt="Step 9 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0009.JPEG"><span class="accessible-text">Step 9 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step10" title="Step10 ‎24-‎Nov-‎26 8:07:08 PM User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step9">Previous</a>
+            <a title="Next" href="#Step11">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 10: (‎24-‎Nov-‎26 8:07:08 PM)</b> User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(10)"><img id="ss-10" class="screenshot-thumb" alt="Step 10 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0010.JPEG"><span class="accessible-text">Step 10 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step11" title="Step11 ‎24-‎Nov-‎26 8:07:09 PM User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step10">Previous</a>
+            <a title="Next" href="#Step12">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 11: (‎24-‎Nov-‎26 8:07:09 PM)</b> User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(11)"><img id="ss-11" class="screenshot-thumb" alt="Step 11 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0011.JPEG"><span class="accessible-text">Step 11 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step12" title="Step12 ‎24-‎Nov-‎26 8:07:11 PM User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step11">Previous</a>
+            <a title="Next" href="#Step13">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 12: (‎24-‎Nov-‎26 8:07:11 PM)</b> User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(12)"><img id="ss-12" class="screenshot-thumb" alt="Step 12 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0012.JPEG"><span class="accessible-text">Step 12 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step13" title="Step13 ‎24-‎Nov-‎26 8:07:14 PM User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step12">Previous</a>
+            <a title="Next" href="#Step14">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 13: (‎24-‎Nov-‎26 8:07:14 PM)</b> User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(13)"><img id="ss-13" class="screenshot-thumb" alt="Step 13 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0013.JPEG"><span class="accessible-text">Step 13 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step14" title="Step14 ‎24-‎Nov-‎26 8:07:15 PM User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step13">Previous</a>
+            <a title="Next" href="#Step15">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 14: (‎24-‎Nov-‎26 8:07:15 PM)</b> User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(14)"><img id="ss-14" class="screenshot-thumb" alt="Step 14 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0014.JPEG"><span class="accessible-text">Step 14 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step15" title="Step15 ‎24-‎Nov-‎26 8:07:16 PM User left click on &quot;Incoterm? (combo box)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step14">Previous</a>
+            <a title="Next" href="#Step16">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 15: (‎24-‎Nov-‎26 8:07:16 PM)</b> User left click on &quot;Incoterm? (combo box)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(15)"><img id="ss-15" class="screenshot-thumb" alt="Step 15 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0015.JPEG"><span class="accessible-text">Step 15 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step16" title="Step16 ‎24-‎Nov-‎26 8:07:20 PM User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step15">Previous</a>
+            <a title="Next" href="#Step17">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 16: (‎24-‎Nov-‎26 8:07:20 PM)</b> User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(16)"><img id="ss-16" class="screenshot-thumb" alt="Step 16 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0016.JPEG"><span class="accessible-text">Step 16 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step17" title="Step17 ‎24-‎Nov-‎26 8:07:24 PM User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step16">Previous</a>
+            <a title="Next" href="#Step18">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 17: (‎24-‎Nov-‎26 8:07:24 PM)</b> User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(17)"><img id="ss-17" class="screenshot-thumb" alt="Step 17 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0017.JPEG"><span class="accessible-text">Step 17 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step18" title="Step18 ‎24-‎Nov-‎26 8:07:25 PM User left click on &quot;Incoterm Location (edit)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step17">Previous</a>
+            <a title="Next" href="#Step19">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 18: (‎24-‎Nov-‎26 8:07:25 PM)</b> User left click on &quot;Incoterm Location (edit)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(18)"><img id="ss-18" class="screenshot-thumb" alt="Step 18 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0018.JPEG"><span class="accessible-text">Step 18 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step19" title="Step19 ‎24-‎Nov-‎26 8:07:27 PM User left click on &quot;Incoterm Location (edit)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step18">Previous</a>
+            <a title="Next" href="#Step20">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 19: (‎24-‎Nov-‎26 8:07:27 PM)</b> User left click on &quot;Incoterm Location (edit)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(19)"><img id="ss-19" class="screenshot-thumb" alt="Step 19 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0019.JPEG"><span class="accessible-text">Step 19 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step20" title="Step20 ‎24-‎Nov-‎26 8:07:28 PM User left click on &quot;Fiscal Position? (combo box)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step19">Previous</a>
+            <a title="Next" href="#Step21">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 20: (‎24-‎Nov-‎26 8:07:28 PM)</b> User left click on &quot;Fiscal Position? (combo box)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(20)"><img id="ss-20" class="screenshot-thumb" alt="Step 20 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0020.JPEG"><span class="accessible-text">Step 20 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step21" title="Step21 ‎24-‎Nov-‎26 8:07:29 PM User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step20">Previous</a>
+            <a title="Next" href="#Step22">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 21: (‎24-‎Nov-‎26 8:07:29 PM)</b> User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(21)"><img id="ss-21" class="screenshot-thumb" alt="Step 21 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0021.JPEG"><span class="accessible-text">Step 21 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step22" title="Step22 ‎24-‎Nov-‎26 8:07:30 PM User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step21">Previous</a>
+            <a title="Next" href="#Step23">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 22: (‎24-‎Nov-‎26 8:07:30 PM)</b> User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(22)"><img id="ss-22" class="screenshot-thumb" alt="Step 22 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0022.JPEG"><span class="accessible-text">Step 22 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step23" title="Step23 ‎24-‎Nov-‎26 8:07:31 PM User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step22">Previous</a>
+            <a title="Next" href="#Step24">Next</a>
+        </p>
+
+        <p id="m13"><b>Step 23: (‎24-‎Nov-‎26 8:07:31 PM)</b> User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(23)"><img id="ss-23" class="screenshot-thumb" alt="Step 23 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0023.JPEG"><span class="accessible-text">Step 23 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+    <div id="Step24" title="Step24 ‎24-‎Nov-‎26 8:07:33 PM User left click on &quot;Steps Recorder - 1 running window (button)&quot;" tabindex="0">
+        <p class="align-right">
+            <a title="Previous" href="#Step23">Previous</a>
+            
+        </p>
+
+        <p id="m13"><b>Step 24: (‎24-‎Nov-‎26 8:07:33 PM)</b> User left click on &quot;Steps Recorder - 1 running window (button)&quot;</p>
+        <!--AddCommentButton-->
+        <!--CommentInputEntityItem-->
+        <!--CommentText-->
+        <!--UpdateCommentButton-->
+
+        <a onclick="zoomToggle(24)"><img id="ss-24" class="screenshot-thumb" alt="Step 24 screenshot." title="Click to enlarge/shrink screenshot." src="screenshot0024.JPEG"><span class="accessible-text">Step 24 screenshot.</span></a>
+        <hr aria-hidden="true" />
+    </div>
+    
+</div>
+
+<div id="AdditionalDetails" tabindex="0">
+    <h1 title="Additional Details" id="m14">Additional Details</h1>
+    <p id="m15">
+        The following section contains the additional details that were
+        recorded.
+    </p>
+    <p id="m16">
+        These details help accurately identify the programs and UI you
+        used in this recording.
+    </p>
+    <p id="m17">
+        This section may contain text that is internal to programs that
+        only very advanced users or programmers may understand.
+    </p>
+    <p id="m18">
+        Please review these details to ensure that they do not contain
+        any information that you would not like others to see.
+    </p>
+
+    <br />
+    <p style="font-family:verdana">
+            Recording Session: ‎24-‎Nov-‎26 8:06:34 PM - 8:07:35 PM<br /><br />Recorded Steps: 24, Missed Steps: 0, Other Errors: 0<br /><br />Operating System: 26100.1.amd64fre.ge_release.240331-1435 10.0.0.0.2.48<br /><br />Step 1: User left click on &quot;Invoices (document)&quot; in &quot;Invoices - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: o_web_client, Invoices, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Invoices - Google Chrome - S M Badrul, BrowserRootView, Invoices - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 2: User left click on &quot;Invoices (document)&quot; in &quot;Invoices - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: d-contents, o_action_manager, o_web_client, Invoices, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Invoices - Google Chrome - S M Badrul, BrowserRootView, Invoices - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 3: User left click on &quot;Journal Items (tab item)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: Journal Items, nav-link, Journal Items, nav-item flex-nowrap, nav nav-tabs flex-row flex-nowrap, o_notebook_headers, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 4: User left click on &quot;Other Info (tab item)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: Other Info, nav-link, Other Info, nav-item flex-nowrap, nav nav-tabs flex-row flex-nowrap, o_notebook_headers, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 5: User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: o_input, o_field_widget o_field_char, o_cell o_cell_custom mb-3 mb-md-0, o_notebook_content tab-content, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 6: User left click on &quot;Salesperson (combo box)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: Salesperson, o-autocomplete--input o_input pe-3 text-truncate, o-autocomplete dropdown, o_input_dropdown, o_cell o_wrap_input text-break mb-3 mb-md-0, o_notebook_content tab-content, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 7: User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 8: User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 9: User left click on &quot;Delivery Date (edit)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: Delivery Date, o_input cursor-pointer user-select-none, o_cell o_wrap_input text-break mb-3 mb-md-0, o_notebook_content tab-content, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 10: User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: o_notebook_content tab-content, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 11: User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: o_notebook_content tab-content, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 12: User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: o_notebook_content tab-content, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 13: User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: o_notebook_content tab-content, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 14: User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: o_notebook_content tab-content, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 15: User left click on &quot;Incoterm? (combo box)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: Incoterm?, o-autocomplete--input o_input pe-3 text-truncate, o-autocomplete dropdown, o_input_dropdown, o_cell o_wrap_input text-break mb-3 mb-md-0, o_notebook_content tab-content, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 16: User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 17: User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: o_web_client modal-open, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 18: User left click on &quot;Incoterm Location (edit)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: Incoterm Location, o_input, o_field_widget o_field_char, o_cell o_wrap_input text-break mb-3 mb-md-0, o_notebook_content tab-content, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 19: User left click on &quot;Incoterm Location (edit)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: Incoterm Location, o_input, o_field_widget o_field_char, o_cell o_wrap_input text-break mb-3 mb-md-0, o_notebook_content tab-content, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 20: User left click on &quot;Fiscal Position? (combo box)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: Fiscal Position?, o-autocomplete--input o_input pe-3 text-truncate, o-autocomplete dropdown, o_input_dropdown, o_cell o_wrap_input text-break mb-3 mb-md-0, o_notebook_content tab-content, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 21: User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: o_notebook_content tab-content, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 22: User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: o_notebook_content tab-content, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 23: User left click on &quot;Draft Invoice (document)&quot; in &quot;Draft Invoice - Google Chrome&quot;<br />Program: Google Chrome, 158.0.8127.37, Google LLC, CHROME.EXE  --SOURCE-SHORTCUT-LOCATION=TASKBAR, CHROME.EXE<br />UI Elements: o_notebook_content tab-content, o_form_sheet position-relative, o_content, o_action_manager, o_web_client, Draft Invoice, Chrome Legacy Window, Chrome_RenderWidgetHostHWND, Chrome_WidgetWin_1, MultiContentsView, BrowserView, BrowserFrameViewWin, NonClientView, Draft Invoice - Google Chrome - S M Badrul, BrowserRootView, Draft Invoice - Google Chrome, Chrome_WidgetWin_1<br /><br />Step 24: User left click on &quot;Steps Recorder - 1 running window (button)&quot;<br />Program: Windows Explorer, 10.0.26100.10068 (WinBuild.160101.0800), Microsoft Corporation, EXPLORER.EXE, EXPLORER.EXE<br />UI Elements: Steps Recorder - 1 running window, Taskbar.TaskListButtonAutomationPeer, Taskbar.TaskbarFrameAutomationPeer, Windows.UI.Input.InputSite.WindowClass, DesktopWindowXamlSource, Windows.UI.Composition.DesktopWindowContentBridge, Taskbar, Shell_TrayWnd<br /><br />
+    </p>
+    <hr id="m19" aria-hidden="true" />
+    <a href="#ReportTop" title="Return to top of page"> Return to top of page... </a>
+</div>
+<div style="height:500px; max-width: 100%;">&nbsp;</div>
+</body>
+</html>
+

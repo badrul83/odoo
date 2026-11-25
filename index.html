@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5faf8">
+    <meta name="description" content="Bangladesh wholesale consumer goods ERP workspace">
+    <title>Wholesale Operations · ODOO</title>
+  <link rel="stylesheet" href="./theme.css?v=20261125-purchase-product-editor-9">
+    <link rel="stylesheet" href="./php-erp/public/shared-smart-panel.css?v=20261124-1">
+    <script src="./php-erp/public/shared-smart-panel.js?v=20261124-1" defer></script>
+    <script src="./crm-module.js?v=20261124-crm-flow-shared-6" defer></script>
+  <script src="./app.js?v=20261125-purchase-product-editor-9" defer></script>
+  </head>
+  <body>
+    <div class="odoo-app">
+      <header class="topbar launcher-active">
+        <div class="topbar-left">
+          <button class="app-switcher icon-button" type="button" data-action="launcher" aria-label="Open applications" title="Applications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h5v5H4zM15 4h5v5h-5zM4 15h5v5H4zM15 15h5v5h-5z"/></svg>
+          </button>
+          <button class="app-brand" id="app-brand" type="button" data-action="launcher" aria-label="Home Menu" hidden>
+            <span class="brand-mark-slot" aria-hidden="true"><span class="brand-mark-current"><span class="purchase-mark"><i></i><b></b></span></span><svg class="brand-home-arrow" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></span>
+            <span class="brand-label">Purchase</span>
+          </button>
+          <nav class="primary-nav" id="primary-nav" aria-label="Purchase navigation" hidden>
+            <button type="button" data-menu="orders">Orders</button>
+            <button type="button" data-menu="products">Products</button>
+            <button type="button" data-menu="reporting">Reporting</button>
+            <button type="button" data-menu="configuration">Configuration</button>
+          </nav>
+        </div>
+        <div class="topbar-tools" aria-label="User tools">
+          <span class="settings-status-indicator" aria-label="Status"></span>
+          <button class="tool-button settings-phone-tool" type="button" data-action="toast" data-message="Phone providers can be configured in Settings integrations." aria-label="Phone" title="Phone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h3l1.4 4-2 1.5a15 15 0 0 0 6.1 6.1l1.5-2 4 1.4v3c0 1.2-1 2.1-2.2 2.1C10 19.2 4.8 14 4.4 5.7c0-1.2.9-2.2 2.1-2.2Z"/></svg><i class="notification-count">1</i></button>
+          <button class="tool-button ai-tool" type="button" data-action="toast" data-message="AI assistant is ready for a future connection." aria-label="AI assistant" title="AI assistant"><span>AI</span></button>
+          <button class="tool-button" type="button" data-action="go-discuss" aria-label="Messages" title="Discuss"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v12H9l-5 3v-15Z"/><path d="M8 9h8M8 13h5"/></svg><i class="notification-count settings-message-count">3</i></button>
+          <button class="tool-button activity-tool" type="button" data-action="activities" aria-label="Activities"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg><i class="notification-count settings-activity-count">19</i></button>
+          <button class="tool-button" type="button" data-action="go-settings" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.8 4.2 5 5M4 20l4.5-1 9.8-9.8a2.7 2.7 0 0 0-3.8-3.8L4.8 15.1 4 20Z"/><path d="m3.5 3.5 5 5M14.5 14.5l6 6"/></svg></button>
+          <span class="user-name" id="user-display-name">arafatchemica</span>
+          <button class="user-avatar" type="button" data-action="user-profile-menu" aria-label="User profile" aria-haspopup="menu" aria-expanded="false">S<span></span></button>
+        </div>
+      </header>
+
+      <div id="user-profile-popover" class="user-profile-popover" role="menu" aria-label="User profile menu" hidden></div>
+
+      <div class="menu-popover" id="menu-popover" hidden></div>
+      <div class="activity-popover" id="activity-popover" hidden></div>
+      <section class="launcher-view" id="launcher-view" aria-label="Applications"></section>
+      <main id="page-content" class="page-content" tabindex="-1" hidden></main>
+      <div class="modal-root" id="modal-root"></div>
+      <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+    </div>
+  </body>
+</html>

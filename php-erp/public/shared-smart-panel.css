@@ -1,0 +1,147 @@
+/* Shared smart-button shell and dropdown for both ERP frontends. */
+.erp-shared-smart-panel {
+  --erp-smart-border: #d9dce3;
+  --erp-smart-divider: #e2e3e8;
+  --erp-smart-ink: #17191d;
+  --erp-smart-muted: #596474;
+  --erp-smart-accent: #806584;
+  display: inline-flex;
+  width: max-content;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 35px;
+  align-items: stretch;
+  overflow: visible;
+  border: 1px solid var(--erp-smart-border);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--erp-smart-ink);
+  font-family: "Roboto", "Segoe UI", Arial, sans-serif;
+}
+.erp-shared-smart-panel__items {
+  display: inline-flex;
+  width: max-content;
+  min-width: 0;
+  max-width: 100%;
+  align-items: stretch;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: 5px 0 0 5px;
+  scrollbar-width: none;
+}
+.erp-shared-smart-panel__items::-webkit-scrollbar { display: none; }
+.erp-shared-smart-panel__button {
+  display: flex;
+  min-width: 88px;
+  min-height: 33px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 3px 9px;
+  border: 0;
+  border-right: 1px solid var(--erp-smart-divider);
+  border-radius: 0;
+  background: #fff;
+  color: var(--erp-smart-ink);
+  font: 500 13px/1.2 "Roboto", "Segoe UI", Arial, sans-serif;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.erp-shared-smart-panel__button:hover { background: #faf7fb; color: var(--erp-smart-accent); }
+.erp-shared-smart-panel__button:focus-visible,
+.erp-shared-smart-panel__more-button:focus-visible { position: relative; z-index: 1; outline: 2px solid #b69abb; outline-offset: -2px; }
+.erp-shared-smart-panel__button:disabled { background: #fbfbfc; color: #aeb3bb; cursor: not-allowed; }
+.erp-shared-smart-panel__button > svg,
+.erp-shared-smart-panel__button > .erp-shared-smart-panel__icon {
+  display: grid;
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  place-items: center;
+  color: var(--erp-smart-accent);
+}
+.erp-shared-smart-panel__button > svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.erp-shared-smart-panel__copy { display: grid; gap: 2px; line-height: 1.2; white-space: nowrap; }
+.erp-shared-smart-panel__copy strong { color: inherit; font-size: 13px; font-weight: 600; }
+.erp-shared-smart-panel__copy small { color: #343940; font-size: 11px; font-weight: 500; }
+.erp-shared-smart-panel__more { position: relative; display: flex; flex: 0 0 auto; }
+.erp-shared-smart-panel__more-button {
+  display: flex;
+  min-width: 74px;
+  min-height: 33px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 10px;
+  border: 0;
+  border-left: 1px solid var(--erp-smart-divider);
+  border-radius: 0 4px 4px 0;
+  background: #fff;
+  color: var(--erp-smart-ink);
+  font: 500 13px "Roboto", "Segoe UI", Arial, sans-serif;
+  cursor: pointer;
+}
+.erp-shared-smart-panel__more-button:hover,
+.erp-shared-smart-panel__more-button[aria-expanded="true"] { background: #faf7fb; color: var(--erp-smart-accent); }
+.erp-shared-smart-panel__more-button > svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s ease; }
+.erp-shared-smart-panel__more-button[aria-expanded="true"] > svg { transform: rotate(180deg); }
+.erp-shared-smart-panel__menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  z-index: 60;
+  width: max-content;
+  min-width: 170px;
+  max-width: min(320px, calc(100vw - 20px));
+  padding: 4px;
+  border: 1px solid #e0dce3;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(44, 38, 48, .14);
+}
+.erp-shared-smart-panel__menu[hidden] { display: none; }
+.erp-shared-smart-panel__menu .erp-shared-smart-panel__button {
+  width: 100%;
+  min-height: 40px;
+  justify-content: flex-start;
+  border: 0;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.erp-shared-smart-panel__menu .erp-shared-smart-panel__copy { white-space: normal; }
+.product-smart-panel {
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 5px 22px 16px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.product-smart-panel .erp-shared-smart-panel__items { width: 100%; max-width: 100%; }
+.product-smart-panel .product-smart-card {
+  display: flex;
+  min-width: 0;
+  min-height: 52px;
+  flex: 1 1 0;
+  justify-content: flex-start;
+  border-radius: 0;
+  border-top: 0;
+  border-bottom: 0;
+  background: #fff;
+  color: var(--erp-smart-ink);
+}
+.product-smart-panel .erp-shared-smart-panel__copy { width: 100%; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 8px; white-space: normal; }
+.product-smart-panel .product-smart-copy { min-width: 0; }
+.product-smart-panel .product-smart-icon { width: 19px; height: 19px; flex: 0 0 19px; border-radius: 0; background: transparent; color: var(--erp-smart-accent); font-size: 17px; }
+.product-smart-panel .product-smart-copy strong { color: var(--erp-smart-ink); font-size: 13px; font-weight: 600; }
+.product-smart-panel .product-smart-copy small,.product-smart-panel .product-smart-value { color: #343940; font-size: 11px; font-weight: 500; }
+@media (max-width: 720px) {
+  .erp-shared-smart-panel { max-width: 100%; }
+  .erp-shared-smart-panel__items { max-width: calc(100vw - 110px); }
+  .product-smart-panel { padding-right: 14px; padding-left: 14px; }
+  .product-smart-panel .erp-shared-smart-panel__items { max-width: 100%; }
+}

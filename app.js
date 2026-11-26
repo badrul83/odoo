@@ -439,7 +439,12 @@ function readSalesCustomers() {
 }
 
 function contactHasSupplierRole(contact) { return Boolean(contact?.isSupplier ?? (contact?.kind === "supplier")); }
-function contactHasCustomerRole(contact) { return Boolean(contact?.isCustomer ?? (contact?.kind === "dealer")); }
+function contactHasDirectCustomerRole(contact) { return Boolean(contact?.isCustomer ?? (contact?.kind === "dealer")); }
+function contactHasDealerRole(contact) { return Boolean(contact?.isDealer ?? (contact?.kind === "dealer")); }
+function contactHasNonRegisteredDealerRole(contact) { return Boolean(contact?.isNonRegisteredDealer ?? (contact?.kind === "non-registered-dealer")); }
+function contactHasCustomerRole(contact) {
+  return contactHasDirectCustomerRole(contact) || contactHasDealerRole(contact) || contactHasNonRegisteredDealerRole(contact);
+}
 
 function readContactRecords() {
   const contacts = readLocalCollection("odooContacts").map((contact) => ({
@@ -447,6 +452,8 @@ function readContactRecords() {
     kind: contact.kind || "contact",
     isSupplier: Boolean(contact.isSupplier ?? contact.kind === "supplier"),
     isCustomer: Boolean(contact.isCustomer ?? contact.kind === "dealer"),
+    isDealer: Boolean(contact.isDealer ?? contact.kind === "dealer"),
+    isNonRegisteredDealer: Boolean(contact.isNonRegisteredDealer ?? contact.kind === "non-registered-dealer"),
   }));
   const findExisting = (kind, id, name, email, contactId) => contacts.find((contact) => {
     if (contactId && String(contact.id) === String(contactId)) return true;
@@ -457,17 +464,21 @@ function readContactRecords() {
   });
   vendors.forEach((vendor) => {
     const existing = findExisting("supplier", vendor.id, vendor.name, vendor.email, vendor.contactId);
-    if (existing) Object.assign(existing, vendor, { id: existing.id, kind: existing.kind || "supplier", linkedId: vendor.id, supplierId: vendor.id, isSupplier: true, isCustomer: contactHasCustomerRole(existing) || Boolean(vendor.isCustomer), approved: vendor.approved !== false });
+    if (existing) Object.assign(existing, vendor, { id: existing.id, kind: existing.kind || "supplier", linkedId: vendor.id, supplierId: vendor.id, isSupplier: true, isCustomer: contactHasDirectCustomerRole(existing) || Boolean(vendor.isCustomer), approved: vendor.approved !== false });
     else contacts.push({ ...vendor, id: vendor.contactId || vendor.id, kind: "supplier", linkedId: vendor.id, supplierId: vendor.id, isSupplier: true, isCustomer: false, approved: vendor.approved !== false });
   });
   readSalesCustomers().forEach((customer) => {
     const existing = findExisting("dealer", customer.id, customer.name, customer.email, customer.contactId);
-    if (existing) Object.assign(existing, customer, { id: existing.id, kind: existing.kind || "dealer", linkedId: customer.id, customerId: customer.id, isCustomer: true, isSupplier: contactHasSupplierRole(existing) || Boolean(customer.isSupplier) });
-    else contacts.push({ ...customer, id: customer.contactId || customer.id, kind: "dealer", linkedId: customer.id, customerId: customer.id, isSupplier: false, isCustomer: true, city: customer.city || customer.area || "" });
+    if (existing) Object.assign(existing, customer, { id: existing.id, kind: existing.kind || "dealer", linkedId: customer.id, customerId: customer.id, isCustomer: Boolean(customer.isCustomer ?? true), isSupplier: contactHasSupplierRole(existing) || Boolean(customer.isSupplier) });
+    else contacts.push({ ...customer, id: customer.contactId || customer.id, kind: "dealer", linkedId: customer.id, customerId: customer.id, isSupplier: false, isCustomer: Boolean(customer.isCustomer ?? true), isDealer: Boolean(customer.isDealer ?? (/dealer/i.test(customer.type || "") || customer.kind === "dealer")), isNonRegisteredDealer: Boolean(customer.isNonRegisteredDealer ?? /non.?registered/i.test(customer.type || "")), city: customer.city || customer.area || "" });
   });
   contacts.forEach((contact) => {
     contact.isSupplier = Boolean(contact.isSupplier ?? contact.kind === "supplier");
     contact.isCustomer = Boolean(contact.isCustomer ?? contact.kind === "dealer");
+    contact.isDealer = Boolean(contact.isDealer ?? contact.kind === "dealer");
+    contact.isNonRegisteredDealer = Boolean(contact.isNonRegisteredDealer ?? contact.kind === "non-registered-dealer");
+    if (contact.purchasePaymentTerms === undefined && contact.isSupplier) contact.purchasePaymentTerms = contact.paymentTerms || "Immediate";
+    if (contact.salesPaymentTerms === undefined && !contact.isSupplier) contact.salesPaymentTerms = contact.paymentTerms || "";
   });
   return contacts;
 }
@@ -483,6 +494,8 @@ function persistPartnerContact(contact) {
   const previousContact = state.contacts.find((item) => String(item.id) === String(contact.id));
   contact.isSupplier = Boolean(contact.isSupplier ?? contact.kind === "supplier");
   contact.isCustomer = Boolean(contact.isCustomer ?? contact.kind === "dealer");
+  contact.isDealer = Boolean(contact.isDealer ?? contact.kind === "dealer");
+  contact.isNonRegisteredDealer = Boolean(contact.isNonRegisteredDealer ?? contact.kind === "non-registered-dealer");
   contact.defaultPurchaseVendor = Boolean(contact.isSupplier && contact.defaultPurchaseVendor);
   if (contact.defaultPurchaseVendor) {
     state.contacts.forEach((item) => { if (String(item.id) !== String(contact.id)) item.defaultPurchaseVendor = false; });
@@ -502,7 +515,7 @@ function persistPartnerContact(contact) {
     const synced = {
       ...(vendor || {}), ...contact, image: undefined, id: vendor?.id || contact.supplierId || (contact.kind === "supplier" ? contact.linkedId : null) || contact.id, contactId: contact.id,
       name: contact.name, email: contact.email || "", phone: contact.phone || "", reference: contact.reference || "",
-      taxId: contact.taxId || "", address: contact.address || "", paymentTerms: contact.paymentTerms || "Immediate",
+      taxId: contact.taxId || "", address: contact.address || "", paymentTerms: contact.purchasePaymentTerms || contact.paymentTerms || "Immediate", purchasePaymentTerms: contact.purchasePaymentTerms || contact.paymentTerms || "Immediate",
       notes: contact.notes || "", approved: contact.approved === true, orders: vendor?.orders || 0, amount: vendor?.amount || 0,
     };
     if (vendor) Object.assign(vendor, synced); else vendors.push(synced);
@@ -511,24 +524,24 @@ function persistPartnerContact(contact) {
     const previousSupplierId = contact.supplierId || previousContact?.supplierId || (previousContact?.kind === "supplier" ? previousContact.linkedId || previousContact.id : "");
     for (let index = vendors.length - 1; index >= 0; index -= 1) if (String(vendors[index].contactId || "") === String(contact.id) || (previousSupplierId && String(vendors[index].id) === String(previousSupplierId))) vendors.splice(index, 1);
   }
-  const customerId = contact.customerId || (contact.kind === "dealer" ? contact.linkedId || contact.id : "");
+  const customerId = contact.customerId || (contactHasCustomerRole(contact) ? contact.linkedId || contact.id : "");
   const customer = state.salesCustomers.find((item) => String(item.contactId || "") === String(contact.id))
     || state.salesCustomers.find((item) => customerId && String(item.id) === String(customerId))
     || state.salesCustomers.find((item) => normalizedEmail && String(item.name || "").trim().toLowerCase() === normalizedName && String(item.email || "").trim().toLowerCase() === normalizedEmail);
-  if (contact.isCustomer) {
+  if (contactHasCustomerRole(contact)) {
     const synced = {
-      ...(customer || {}), ...contact, image: undefined, id: customer?.id || contact.customerId || (contact.kind === "dealer" ? contact.linkedId : null) || contact.id, contactId: contact.id,
+      ...(customer || {}), ...contact, image: undefined, id: customer?.id || contact.customerId || (contactHasCustomerRole(contact) ? contact.linkedId : null) || contact.id, contactId: contact.id,
       name: contact.name, email: contact.email || "", phone: contact.phone || "", area: contact.area || contact.city || "",
-      city: contact.city || "", type: contact.dealerType || contact.channel || "Dealer", creditLimit: Number(contact.creditLimit || 0),
+      city: contact.city || "", type: contact.isNonRegisteredDealer ? "Non-registered Dealer" : contact.isDealer ? (contact.dealerType || contact.channel || "Dealer") : contact.dealerType || contact.channel || "Customer", creditLimit: Number(contact.creditLimit || 0), paymentTerms: contact.salesPaymentTerms || (contact.isSupplier ? "" : contact.paymentTerms || ""),
       address: contact.address || "", taxId: contact.taxId || "", notes: contact.notes || "",
     };
     if (customer) Object.assign(customer, synced); else state.salesCustomers.push(synced);
     contact.customerId = synced.id;
   } else if (contactHasCustomerRole(previousContact)) {
-    const previousCustomerId = contact.customerId || previousContact?.customerId || (previousContact?.kind === "dealer" ? previousContact.linkedId || previousContact.id : "");
+    const previousCustomerId = contact.customerId || previousContact?.customerId || (contactHasCustomerRole(previousContact) ? previousContact.linkedId || previousContact.id : "");
     for (let index = state.salesCustomers.length - 1; index >= 0; index -= 1) if (String(state.salesCustomers[index].contactId || "") === String(contact.id) || (previousCustomerId && String(state.salesCustomers[index].id) === String(previousCustomerId))) state.salesCustomers.splice(index, 1);
   }
-  contact.linkedId = contact.kind === "supplier" ? contact.supplierId || contact.linkedId : contact.kind === "dealer" ? contact.customerId || contact.linkedId : contact.linkedId;
+  contact.linkedId = contact.kind === "supplier" ? contact.supplierId || contact.linkedId : contactHasCustomerRole(contact) ? contact.customerId || contact.linkedId : contact.linkedId;
 
   try {
     localStorage.setItem("odooContacts", JSON.stringify(state.contacts));
@@ -1095,6 +1108,7 @@ const pageLabels = {
   "accounting-vendor-payments": "Payments",
   "accounting-vendors-list": "Vendors",
   "sales-quotations": "Quotations",
+  "sales-stock-forecast": "Forecasted Report",
   "crm-pipeline": "My Pipeline",
   "crm-leads": "Leads",
   "crm-activities": "My Activities",
@@ -1165,7 +1179,7 @@ function readLastRoute() {
   try {
     const saved = JSON.parse(localStorage.getItem("odooLastRoute") || "null");
     if (!saved || !pageLabels[saved.page] || !validRouteModules.includes(saved.module)) return fallback;
-    const editor = ["product-configuration", "sales-product", "warehouse", "category", "uom", "gift-item"].includes(saved.editor?.kind) ? saved.editor : null;
+    const editor = ["product-configuration", "sales-product", "warehouse", "category", "uom", "gift-item", "sales-stock-forecast"].includes(saved.editor?.kind) ? saved.editor : null;
     return routeFromHash(routeHashFor(saved.module, saved.page, editor)) || fallback;
   } catch { return fallback; }
 }
@@ -1213,9 +1227,13 @@ function routeHashFor(module, page, editor = null) {
   const supportsProductEditor = module === "inventory" || module === "sales";
   const supportsConfigurationEditor = module === "inventory" && editor?.kind === "product-configuration";
   const supportsSalesProductEditor = supportsProductEditor && editor?.kind === "sales-product";
-  if (!supportsWarehouseEditor && !supportsCategoryEditor && !supportsUomEditor && !supportsGiftItemEditor && !supportsConfigurationEditor && !supportsSalesProductEditor) return path;
+  const supportsSalesStockForecast = module === "sales" && page === "sales-stock-forecast" && editor?.kind === "sales-stock-forecast";
+  if (!supportsWarehouseEditor && !supportsCategoryEditor && !supportsUomEditor && !supportsGiftItemEditor && !supportsConfigurationEditor && !supportsSalesProductEditor && !supportsSalesStockForecast) return path;
   const params = new URLSearchParams({ editor: editor.kind });
   if (editor.id != null && editor.id !== "") params.set("id", String(editor.id));
+  if (editor.orderId != null && editor.orderId !== "") params.set("order", String(editor.orderId));
+  if (editor.context) params.set("context", String(editor.context));
+  if (editor.purchaseOrderId != null && editor.purchaseOrderId !== "") params.set("purchaseOrder", String(editor.purchaseOrderId));
   if (editor.returnPage) params.set("returnPage", String(editor.returnPage));
   if (editor.returnPickerId) params.set("returnPickerId", String(editor.returnPickerId));
   if (editor.returnToProduct) params.set("returnToProduct", "1");
@@ -1292,12 +1310,29 @@ function routeFromHash(hash = window.location.hash) {
         configurationId: params.get("configuration") || null,
         tab: allowedTabs.includes(requestedTab) ? requestedTab : "configuration",
       };
+    } else if (kind === "sales-stock-forecast") {
+      const productId = Number(params.get("id"));
+      if (module !== "sales" || page !== "sales-stock-forecast" || !Number.isInteger(productId) || productId <= 0) return null;
+      const context = params.get("context") === "purchase" ? "purchase" : "sales";
+      const returnPage = params.get("returnPage") || "";
+      if (returnPage && !pageLabels[returnPage]) return null;
+      editor = { kind, id: String(productId), orderId: params.get("order") || null, context, returnPage, purchaseOrderId: params.get("purchaseOrder") || null };
     } else return null;
   }
   return { page, module, editor };
 }
 
 const initialRoute = readLastRoute();
+const invoiceEditorAutosaveKey = "odooInvoiceEditorAutosave";
+
+function readInvoiceEditorAutosave(route) {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(invoiceEditorAutosaveKey) || "null");
+    return saved?.page === route?.page && saved?.module === route?.module && saved?.editor?.kind ? saved : null;
+  } catch { return null; }
+}
+
+const initialInvoiceEditorAutosave = readInvoiceEditorAutosave(initialRoute);
 
 const defaultSettings = {
   country: "BD",
@@ -1470,6 +1505,12 @@ const defaultInventoryLocations = isFreshCompanyStart ? [] : [
 const state = {
   page: initialRoute.page,
   module: initialRoute.module,
+  salesStockForecastProductId: initialRoute.editor?.kind === "sales-stock-forecast" ? Number(initialRoute.editor.id) : null,
+  salesStockForecastOrderId: initialRoute.editor?.kind === "sales-stock-forecast" ? initialRoute.editor.orderId || null : null,
+  salesStockForecastContext: initialRoute.editor?.kind === "sales-stock-forecast" ? initialRoute.editor.context || "sales" : "sales",
+  salesStockForecastReturnPage: initialRoute.editor?.kind === "sales-stock-forecast" ? initialRoute.editor.returnPage || "" : "",
+  salesStockForecastPurchaseOrderId: initialRoute.editor?.kind === "sales-stock-forecast" ? initialRoute.editor.purchaseOrderId || null : null,
+  salesStockForecastReturn: null,
   launcher: initialRoute.page === "launcher",
   launcherOrder: readLauncherOrder(),
   desktopProductIds: readDesktopProductShortcuts(),
@@ -1591,6 +1632,7 @@ const state = {
   inventoryLocations: (() => { try { const rows = JSON.parse(localStorage.getItem("odooFmcgInventoryLocations") || "null"); return Array.isArray(rows) && rows.length ? rows : defaultInventoryLocations.map((location) => ({ ...location })); } catch { return defaultInventoryLocations.map((location) => ({ ...location })); } })(),
   inventoryWarehouses: readInventoryWarehouses(),
   inventoryListDrag: null,
+  salesLineDrag: null,
   inventoryWarehouseEditor: initialRoute.editor?.kind === "warehouse" ? { ...initialRoute.editor } : null,
   inventoryCategoryEditor: initialRoute.editor?.kind === "category" ? { ...initialRoute.editor } : null,
   inventoryUomEditor: initialRoute.editor?.kind === "uom" ? { ...initialRoute.editor } : null,
@@ -1610,8 +1652,8 @@ const state = {
   salesConfig: (() => { try { return JSON.parse(localStorage.getItem("odooFmcgSalesConfig") || "{}"); } catch { return {}; } })(),
   salesPeriod: "last7",
   invoices: readLocalCollection("odooInvoiceRegister"),
-  invoiceEditor: null,
-  invoiceTab: "invoice-lines",
+  invoiceEditor: initialInvoiceEditorAutosave?.editor || null,
+  invoiceTab: initialInvoiceEditorAutosave?.invoiceTab || "invoice-lines",
   invoicePaymentEditor: null,
   contactEditor: null,
   contactCommissionPlans: readLocalCollection("odooContactCommissionPlans"),
@@ -1640,6 +1682,111 @@ if (state.inventoryConfig?.multiStepRoutes && !state.inventoryConfig.storageLoca
 }
 
 const pageContent = document.querySelector("#page-content");
+const pageScrollStorageKey = "odooPageScrollPosition";
+let pendingPageScrollSave = 0;
+const pendingScrollTargets = new Set();
+
+function currentPageScrollRoute() {
+  return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+}
+
+function readPageScrollState() {
+  const route = currentPageScrollRoute();
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(pageScrollStorageKey) || "null");
+    if (saved?.route === route) return { ...saved, elements: Array.isArray(saved.elements) ? saved.elements : [] };
+  } catch { /* Keep the current scroll position in memory when session storage is unavailable. */ }
+  return { route, x: 0, y: 0, elements: [] };
+}
+
+function writePageScrollState(scrollState) {
+  try { sessionStorage.setItem(pageScrollStorageKey, JSON.stringify(scrollState)); }
+  catch { /* Keep the current scroll position in memory when session storage is unavailable. */ }
+}
+
+function pageScrollLocator(element) {
+  const pathParts = [];
+  let current = element;
+  while (current && current !== document.documentElement) {
+    if (current.id) {
+      const path = pathParts.join(" > ");
+      return { id: current.id, path, key: `id:${current.id}${path ? `>${path}` : ""}` };
+    }
+    if (current === document.body) {
+      const path = ["body", ...pathParts].join(" > ");
+      return { id: "", path, key: `path:${path}` };
+    }
+    const siblings = current.parentElement
+      ? [...current.parentElement.children].filter((sibling) => sibling.tagName === current.tagName)
+      : [];
+    pathParts.unshift(`${current.tagName.toLowerCase()}:nth-of-type(${Math.max(1, siblings.indexOf(current) + 1)})`);
+    current = current.parentElement;
+  }
+  const path = pathParts.join(" > ");
+  return path ? { id: "", path, key: `path:${path}` } : null;
+}
+
+function savePageScrollTarget(target) {
+  const scrollState = readPageScrollState();
+  if (!target) {
+    scrollState.x = window.scrollX;
+    scrollState.y = window.scrollY;
+  } else {
+    const locator = pageScrollLocator(target);
+    if (!locator) return;
+    const position = { ...locator, x: target.scrollLeft, y: target.scrollTop };
+    scrollState.elements = scrollState.elements.filter((saved) => saved.key !== locator.key);
+    scrollState.elements.push(position);
+  }
+  writePageScrollState(scrollState);
+}
+
+function queuePageScrollSave(target = null) {
+  pendingScrollTargets.add(target);
+  if (pendingPageScrollSave) return;
+  pendingPageScrollSave = window.requestAnimationFrame(() => {
+    pendingPageScrollSave = 0;
+    const targets = [...pendingScrollTargets];
+    pendingScrollTargets.clear();
+    targets.forEach(savePageScrollTarget);
+  });
+}
+
+function flushPageScrollSave() {
+  if (pendingPageScrollSave) window.cancelAnimationFrame(pendingPageScrollSave);
+  pendingPageScrollSave = 0;
+  const targets = [...pendingScrollTargets];
+  pendingScrollTargets.clear();
+  targets.forEach(savePageScrollTarget);
+  savePageScrollTarget(null);
+}
+
+function restorePageScrollPosition() {
+  let savedPosition;
+  try { savedPosition = JSON.parse(sessionStorage.getItem(pageScrollStorageKey) || "null"); }
+  catch { return; }
+  if (!savedPosition || savedPosition.route !== currentPageScrollRoute()) return;
+
+  window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+    window.scrollTo(Number(savedPosition.x) || 0, Number(savedPosition.y) || 0);
+    (Array.isArray(savedPosition.elements) ? savedPosition.elements : []).forEach((position) => {
+      let element = position.id ? document.getElementById(position.id) : null;
+      if (element && position.path) element = element.querySelector(position.path);
+      else if (!element && position.path) {
+        try { element = document.querySelector(position.path); } catch { /* Ignore selectors from an older rendered page. */ }
+      }
+      if (element) element.scrollTo(Number(position.x) || 0, Number(position.y) || 0);
+    });
+  }));
+}
+
+window.addEventListener("scroll", () => queuePageScrollSave(), { passive: true });
+document.addEventListener("scroll", (event) => {
+  if (event.target === document || event.target === document.documentElement || event.target === document.body) return;
+  queuePageScrollSave(event.target);
+}, { passive: true, capture: true });
+window.addEventListener("pagehide", flushPageScrollSave);
+
 let inventoryGiftItemReturnView = null;
 const launcherView = document.querySelector("#launcher-view");
 const menuPopover = document.querySelector("#menu-popover");
@@ -1678,7 +1825,9 @@ function showProductSaveNotice({ type = "success", title, message, code = "" }) 
 }
 
 function persistLastRoute({ historyMode = "push" } = {}) {
-  const editor = state.inventoryGiftItemEditor
+  const editor = state.page === "sales-stock-forecast" && state.salesStockForecastProductId
+    ? { kind: "sales-stock-forecast", id: state.salesStockForecastProductId, orderId: state.salesStockForecastOrderId || null, context: state.salesStockForecastContext || "sales", returnPage: state.salesStockForecastReturnPage || "", purchaseOrderId: state.salesStockForecastPurchaseOrderId || null }
+    : state.inventoryGiftItemEditor
     ? { kind: "gift-item", id: state.inventoryGiftItemEditor.id || null, returnPage: state.inventoryGiftItemEditor.returnPage || state.page, returnToProduct: Boolean(state.inventoryGiftItemEditor.returnToProduct), returnPickerId: state.inventoryGiftItemEditor.returnPickerId || "" }
     : state.inventoryUomEditor
     ? { kind: "uom", id: state.inventoryUomEditor.id || null }
@@ -1703,6 +1852,7 @@ function persistLastRoute({ historyMode = "push" } = {}) {
 
 function setPage(page, routeOverride = null) {
   let nextPage = pageLabels[page] ? page : "rfq";
+  if (state.page === "sales-stock-forecast" && nextPage !== "sales-stock-forecast") state.salesStockForecastReturn = null;
   const requiredInventorySetting = inventorySettingPageRequirements[nextPage];
   if (requiredInventorySetting && !inventorySettingsRequirementsMet(requiredInventorySetting)) {
     nextPage = "inventory-settings";
@@ -1718,6 +1868,19 @@ function setPage(page, routeOverride = null) {
   if (nextPage === "settings" && state.page !== "settings") state.settingsSection = "general";
   if (nextPage !== "settings") state.settingsSearch = "";
   state.page = nextPage;
+  if (nextPage === "sales-stock-forecast" && routeOverride?.editor?.kind === "sales-stock-forecast") {
+    state.salesStockForecastProductId = Number(routeOverride.editor.id) || null;
+    state.salesStockForecastOrderId = routeOverride.editor.orderId || null;
+    state.salesStockForecastContext = routeOverride.editor.context || "sales";
+    state.salesStockForecastReturnPage = routeOverride.editor.returnPage || "";
+    state.salesStockForecastPurchaseOrderId = routeOverride.editor.purchaseOrderId || null;
+  } else if (nextPage !== "sales-stock-forecast") {
+    state.salesStockForecastProductId = null;
+    state.salesStockForecastOrderId = null;
+    state.salesStockForecastContext = "sales";
+    state.salesStockForecastReturnPage = "";
+    state.salesStockForecastPurchaseOrderId = null;
+  }
   state.salesEditor = null;
   state.salesProductEditor = routeOverride?.editor?.kind === "sales-product" ? { id: routeOverride.editor.id ? Number(routeOverride.editor.id) : null, returnPage: routeOverride.editor.returnPage || nextPage, configurationId: routeOverride.editor.configurationId || null, pendingConfigurationId: routeOverride.editor.configurationId || null, tab: routeOverride.editor.tab || "configuration" } : false;
   state.purchaseEditor = null;
@@ -1815,6 +1978,8 @@ function applyHashRoute() {
         ? { kind: "gift-item", ...state.inventoryGiftItemEditor }
       : state.salesProductEditor
         ? { kind: "sales-product", ...state.salesProductEditor, configurationId: state.salesProductEditor.pendingConfigurationId || state.salesProductEditor.configurationId || null }
+        : state.page === "sales-stock-forecast" && state.salesStockForecastProductId
+          ? { kind: "sales-stock-forecast", id: String(state.salesStockForecastProductId), orderId: state.salesStockForecastOrderId || null, context: state.salesStockForecastContext || "sales", returnPage: state.salesStockForecastReturnPage || "", purchaseOrderId: state.salesStockForecastPurchaseOrderId || null }
         : null;
     const sameEditor = (!nextEditor && !currentEditor) || (nextEditor && currentEditor
       && nextEditor.kind === currentEditor.kind
@@ -1823,13 +1988,21 @@ function applyHashRoute() {
       && Boolean(nextEditor.fromProduct) === Boolean(currentEditor.fromProduct)
       && Boolean(nextEditor.returnToProduct) === Boolean(currentEditor.returnToProduct)
       && String(nextEditor.returnPickerId || "") === String(currentEditor.returnPickerId || "")
-      && String(nextEditor.configurationId || "") === String(currentEditor.configurationId || ""));
+      && String(nextEditor.configurationId || "") === String(currentEditor.configurationId || "")
+      && String(nextEditor.orderId || "") === String(currentEditor.orderId || "")
+      && String(nextEditor.context || "sales") === String(currentEditor.context || "sales")
+      && String(nextEditor.purchaseOrderId || "") === String(currentEditor.purchaseOrderId || ""));
     if (!sameEditor) {
       state.inventoryProductConfigurationEditor = nextEditor?.kind === "product-configuration" ? { ...nextEditor } : null;
       state.inventoryCategoryEditor = nextEditor?.kind === "category" ? { ...nextEditor } : null;
       state.inventoryUomEditor = nextEditor?.kind === "uom" ? { ...nextEditor } : null;
       state.inventoryGiftItemEditor = nextEditor?.kind === "gift-item" ? { ...nextEditor } : null;
       state.salesProductEditor = nextEditor?.kind === "sales-product" ? { ...nextEditor, id: nextEditor.id ? Number(nextEditor.id) : null, pendingConfigurationId: nextEditor.configurationId || null } : false;
+      state.salesStockForecastProductId = nextEditor?.kind === "sales-stock-forecast" ? Number(nextEditor.id) || null : null;
+      state.salesStockForecastOrderId = nextEditor?.kind === "sales-stock-forecast" ? nextEditor.orderId || null : null;
+      state.salesStockForecastContext = nextEditor?.kind === "sales-stock-forecast" ? nextEditor.context || "sales" : "sales";
+      state.salesStockForecastReturnPage = nextEditor?.kind === "sales-stock-forecast" ? nextEditor.returnPage || "" : "";
+      state.salesStockForecastPurchaseOrderId = nextEditor?.kind === "sales-stock-forecast" ? nextEditor.purchaseOrderId || null : null;
       state.salesProductImageData = null;
       render();
     } else if (nextEditor && nextEditor.tab !== currentEditor.tab) {
@@ -2387,20 +2560,28 @@ function renderVendors() {
 function renderContactsPage() {
   const tabs = [
     ["contacts", "Contacts", state.contacts.length],
+    ["customers", "Customers", state.contacts.filter(contactHasDirectCustomerRole).length],
     ["suppliers", "Suppliers", state.contacts.filter(contactHasSupplierRole).length],
-    ["dealers", "Dealers", state.contacts.filter(contactHasCustomerRole).length],
+    ["dealers", "Dealers", state.contacts.filter(contactHasDealerRole).length],
+    ["non-registered-dealers", "Non-registered Dealers", state.contacts.filter(contactHasNonRegisteredDealerRole).length],
   ];
-  const kindForTab = { suppliers: "supplier", dealers: "dealer" };
-  const selectedKind = kindForTab[state.contactListTab];
+  const contactFilterForTab = {
+    customers: contactHasDirectCustomerRole,
+    suppliers: contactHasSupplierRole,
+    dealers: contactHasDealerRole,
+    "non-registered-dealers": contactHasNonRegisteredDealerRole,
+  };
+  const selectedContactFilter = contactFilterForTab[state.contactListTab];
+  const selectedKind = state.contactListTab === "suppliers" ? "supplier" : state.contactListTab === "customers" ? "customer" : state.contactListTab === "dealers" ? "dealer" : state.contactListTab === "non-registered-dealers" ? "non-registered-dealer" : "";
   const query = state.search.trim().toLowerCase();
-  const rows = state.contacts.filter((contact) => (!selectedKind || (selectedKind === "supplier" ? contactHasSupplierRole(contact) : contactHasCustomerRole(contact)))
+  const rows = state.contacts.filter((contact) => (!selectedContactFilter || selectedContactFilter(contact))
     && (!query || [contact.name, contact.email, contact.phone, contact.city, contact.area, contact.address, contact.kind].some((value) => String(value || "").toLowerCase().includes(query))))
     .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
   const visibleIds = rows.map((contact) => String(contact.id));
   const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => state.selected.has(id));
   const someVisibleSelected = visibleIds.some((id) => state.selected.has(id));
   const body = rows.length ? rows.map((contact) => {
-    const roles = [contactHasSupplierRole(contact) ? "Supplier" : "", contactHasCustomerRole(contact) ? (contact.dealerType || contact.type || "Customer") : ""].filter(Boolean);
+    const roles = [contactHasDirectCustomerRole(contact) ? "Customer" : "", contactHasSupplierRole(contact) ? "Supplier" : "", contactHasDealerRole(contact) ? "Dealer" : "", contactHasNonRegisteredDealerRole(contact) ? "Non-registered Dealer" : ""].filter(Boolean);
     const kindLabel = roles.length ? roles.join(" · ") : "Contact";
     const linkedProducts = contactHasSupplierRole(contact) ? productsForSupplier(contact) : [];
     const linkedProductsCell = contactHasSupplierRole(contact)
@@ -3498,9 +3679,132 @@ function renderActivitiesPage() {
   return `${salesToolbar("Activities", { newAction: false, pager: "0 / 0", views: false })}<section class="list-toolbar"><div class="list-toolbar-left"><span class="results-count">0 activities</span></div><div class="list-toolbar-right"><div class="view-controls" role="group" aria-label="Activity view">${[["list", "list"], ["kanban", "kanban"], ["calendar", "calendar"], ["pivot", "pivot"], ["chart", "chart"]].map(([view, glyph]) => `<button class="view-button ${state.view === view ? "is-active" : ""}" type="button" data-view="${view}" aria-label="${view} view">${icon(glyph)}</button>`).join("")}</div><button class="soft-icon-button" type="button" data-action="configure-columns" title="List settings" aria-label="Configure columns">☷</button></div></section><div class="table-wrap"><table class="data-table activities-table"><thead><tr><th><input type="checkbox" aria-label="Select all activities"></th>${headers.map((header) => `<th class="${header === "Due Date" ? "sorted-column" : ""}">${escapeHtml(header)}</th>`).join("")}</tr></thead><tbody><tr><td colspan="${headers.length + 1}"><div class="empty-state activities-list-empty"><div class="activities-empty-icon">✓</div><h2>Congratulations, you're done with your activities.</h2><p>Scheduled follow-ups from orders and invoices will appear here.</p></div></td></tr></tbody></table></div>`;
 }
 
+function formatSalesForecastQuantity(value) {
+  return new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value || 0));
+}
+
+function renderSalesStockForecastChart(product, forecast) {
+  const width = 1260, height = 410, left = 66, right = 22, top = 20, bottom = 86;
+  const plotWidth = width - left - right, plotHeight = height - top - bottom;
+  const start = new Date(forecast.today);
+  const latestEvent = [...forecast.incomingEvents, ...forecast.outgoingEvents].reduce((latest, event) => event.date > latest ? event.date : latest, start);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 180);
+  if (latestEvent > end) { end.setTime(latestEvent.getTime()); end.setDate(end.getDate() + 30); }
+  const daySpan = Math.max(1, (end - start) / 86400000);
+  const dailyEvents = new Map();
+  [...forecast.incomingEvents, ...forecast.outgoingEvents].forEach((event) => {
+    const time = Math.max(start.getTime(), event.date.getTime());
+    dailyEvents.set(time, (dailyEvents.get(time) || 0) + (event.direction === "in" ? event.quantity : -event.quantity));
+  });
+  const points = [{ date: start, quantity: forecast.onHand }];
+  let balance = forecast.onHand;
+  [...dailyEvents.entries()].sort(([a], [b]) => a - b).forEach(([time, delta]) => {
+    balance += delta;
+    points.push({ date: new Date(Number(time)), quantity: balance });
+  });
+  points.push({ date: end, quantity: balance });
+  const values = points.map((point) => point.quantity);
+  let min = Math.min(0, ...values), max = Math.max(0, ...values);
+  if (min === max) max = min + 1;
+  const y = (value) => top + (max - value) / (max - min) * plotHeight;
+  const x = (date) => left + (date - start) / (daySpan * 86400000) * plotWidth;
+  const ticks = 5;
+  const grid = Array.from({ length: ticks + 1 }, (_, index) => {
+    const value = max - (max - min) * index / ticks;
+    const py = y(value);
+    return `<line x1="${left}" y1="${py}" x2="${width - right}" y2="${py}" class="sales-forecast-grid-line"/><text x="${left - 9}" y="${py + 4}" class="sales-forecast-axis-label" text-anchor="end">${formatSalesForecastQuantity(value)}</text>`;
+  }).join("");
+  const xTicks = 12;
+  const dateLabels = Array.from({ length: xTicks + 1 }, (_, index) => {
+    const date = new Date(start);
+    date.setTime(start.getTime() + (end.getTime() - start.getTime()) * index / xTicks);
+    const px = x(date);
+    const label = date.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
+    return `<line x1="${px}" y1="${top + plotHeight}" x2="${px}" y2="${top + plotHeight + 6}" class="sales-forecast-tick"/><text x="${px}" y="${top + plotHeight + 22}" class="sales-forecast-axis-label sales-forecast-date-label" text-anchor="end" transform="rotate(-45 ${px} ${top + plotHeight + 22})">${escapeHtml(label)}</text>`;
+  }).join("");
+  const linePath = points.map((point, index) => {
+    const px = x(point.date), py = y(point.quantity);
+    return index === 0 ? `M ${px} ${py}` : `H ${px} V ${py}`;
+  }).join(" ");
+  const zeroY = y(0);
+  const areaPath = `M ${x(points[0].date)} ${zeroY} L ${x(points[0].date)} ${y(points[0].quantity)} ${points.slice(1).map((point) => `H ${x(point.date)} V ${y(point.quantity)}`).join(" ")} L ${x(points[points.length - 1].date)} ${zeroY} Z`;
+  const dots = points.slice(0, -1).map((point) => `<circle cx="${x(point.date)}" cy="${y(point.quantity)}" r="3.3" class="sales-forecast-point"><title>${escapeHtml(salesForecastDateText(point.date))}: ${formatSalesForecastQuantity(point.quantity)} ${escapeHtml(product.stockUom || "Units")}</title></circle>`).join("");
+  return `<div class="sales-stock-forecast-chart-scroll"><svg class="sales-stock-forecast-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Forecasted stock quantity for ${escapeHtml(product.name)}"><defs><linearGradient id="sales-forecast-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#48a8ec" stop-opacity=".38"/><stop offset="100%" stop-color="#48a8ec" stop-opacity=".08"/></linearGradient></defs>${grid}<line x1="${left}" y1="${zeroY}" x2="${width - right}" y2="${zeroY}" class="sales-forecast-zero-line"/><path d="${areaPath}" fill="url(#sales-forecast-area)"/><path d="${linePath}" class="sales-forecast-line"/>${dots}${dateLabels}</svg></div><div class="sales-stock-forecast-legend"><i></i><span>${escapeHtml(product.sku ? `[${product.sku}] ${product.name}` : product.name)}</span></div>`;
+}
+
+function captureSalesForecastReturnView() {
+  const copy = (value) => {
+    try { return value ? JSON.parse(JSON.stringify(value)) : null; }
+    catch { return null; }
+  };
+  return {
+    page: state.page,
+    module: state.module,
+    salesEditor: copy(state.salesEditor),
+    purchaseEditor: copy(state.purchaseEditor),
+    salesOrderTab: state.salesOrderTab,
+    purchaseTab: state.purchaseTab,
+    purchaseTaxMode: state.purchaseTaxMode,
+    markup: pageContent.innerHTML,
+    scrollY: window.scrollY,
+    lineScroll: [...pageContent.querySelectorAll(".sale-lines-scroll")].map((element) => ({ left: element.scrollLeft, top: element.scrollTop })),
+  };
+}
+
+function restoreSalesForecastReturnView(snapshot) {
+  if (!snapshot?.page || !snapshot.module) return false;
+  setPage(snapshot.page, { module: snapshot.module });
+  state.salesEditor = snapshot.salesEditor;
+  state.purchaseEditor = snapshot.purchaseEditor;
+  state.salesOrderTab = snapshot.salesOrderTab || "order-lines";
+  state.purchaseTab = snapshot.purchaseTab || "products";
+  state.purchaseTaxMode = snapshot.purchaseTaxMode || "excluded";
+  pageContent.innerHTML = snapshot.markup || "";
+  pageContent.querySelectorAll(".sale-lines-scroll").forEach((element, index) => {
+    const position = snapshot.lineScroll?.[index];
+    if (position) { element.scrollLeft = position.left || 0; element.scrollTop = position.top || 0; }
+  });
+  window.scrollTo({ top: Number(snapshot.scrollY || 0), behavior: "auto" });
+  state.salesStockForecastReturn = null;
+  persistLastRoute({ historyMode: "replace" });
+  return true;
+}
+
+function renderSalesStockForecastPage() {
+  const product = salesProducts.find((item) => Number(item.id) === Number(state.salesStockForecastProductId));
+  if (!product) return `<section class="sales-stock-forecast-page"><button type="button" class="action-button secondary" data-module-page="sales-quotations">← Back to Quotations</button><div class="empty-state"><h2>Product forecast unavailable</h2><p>Select a product from a Sales order line to open its inventory forecast.</p></div></section>`;
+  const forecast = salesStockForecastData(product);
+  const unit = product.stockUom || "Units";
+  const linkedOrder = state.salesOrders.find((order) => Number(order.id) === Number(state.salesStockForecastOrderId));
+  const linkedPurchaseOrder = state.salesStockForecastContext === "purchase" ? purchaseOrders.find((order) => Number(order.id) === Number(state.salesStockForecastPurchaseOrderId)) : null;
+  const replenishmentDate = forecast.incomingEvents.map((event) => event.date).filter((date) => date >= forecast.today).sort((a, b) => a - b)[0] || null;
+  const replenishmentDays = replenishmentDate ? Math.max(0, Math.ceil((replenishmentDate - forecast.today) / 86400000)) : null;
+  const backLabel = linkedOrder?.ref || linkedPurchaseOrder?.ref || (state.salesStockForecastContext === "purchase" ? pageLabels[state.salesStockForecastReturnPage] || "Purchase" : "Quotations");
+  const events = [...forecast.incomingEvents, ...forecast.outgoingEvents].sort((a, b) => a.date - b.date || (a.direction === "in" ? -1 : 1));
+  let running = forecast.onHand;
+  const eventRows = events.map((event) => {
+    running += event.direction === "in" ? event.quantity : -event.quantity;
+    const status = running < 0 ? "Not Available" : "Available";
+    const movement = event.direction === "out" ? `${formatSalesForecastQuantity(event.quantity)} ${unit}` : `+${formatSalesForecastQuantity(event.quantity)} ${unit}`;
+    const usedBy = event.orderId ? `<button type="button" class="reference-link" data-sales-forecast-open-sale="${escapeHtml(event.orderId)}">☆ ${escapeHtml(event.reference)} · ${escapeHtml(event.partner)}</button>` : `${escapeHtml(event.reference)} · ${escapeHtml(event.partner)}`;
+    return `<tr class="${status === "Not Available" ? "is-unavailable" : ""}"><td><span class="sales-forecast-availability ${status === "Not Available" ? "is-unavailable" : ""}">${status}</span></td><td class="numeric-cell ${event.direction === "out" ? "is-negative" : ""}">${movement}</td><td>${usedBy}</td><td>${escapeHtml(salesForecastDateText(event.date))}</td></tr>`;
+  }).join("") || `<tr><td colspan="4" class="sales-forecast-empty">No planned receipts or deliveries for this product.</td></tr>`;
+  const quotationLabel = `${forecast.quotationCount} Quotation${forecast.quotationCount === 1 ? "" : "s"}`;
+  const chart = renderSalesStockForecastChart(product, forecast);
+  return `<section class="sales-stock-forecast-page">
+    <header class="sales-stock-forecast-toolbar"><div class="sales-stock-forecast-breadcrumbs"><button type="button" data-sales-forecast-back="${escapeHtml(linkedOrder?.id || "")}" data-sales-forecast-context="${escapeHtml(state.salesStockForecastContext || "sales")}" data-sales-forecast-return-page="${escapeHtml(state.salesStockForecastReturnPage || "")}" data-sales-forecast-purchase-order="${escapeHtml(state.salesStockForecastPurchaseOrderId || "")}">… / ${escapeHtml(backLabel)}</button><span>/</span><strong>Forecasted Report</strong></div><div class="sales-stock-forecast-actions"><button type="button" class="action-button" data-sales-forecast-action="replenish">Replenish</button><button type="button" class="action-button secondary" data-sales-forecast-action="update-quantity">Update Quantity</button><span class="sales-stock-forecast-warehouse">⌂ &nbsp;Warehouse: ${escapeHtml(state.inventoryLocations[0]?.warehouse || state.settings.companyName || "Company")}</span></div></header>
+    <div class="sales-stock-forecast-summary"><div class="sales-stock-forecast-product"><h1>${escapeHtml(product.sku ? `[${product.sku}] ${product.name}` : product.name)}</h1><span>Value On Hand: ${salesCurrency(forecast.onHand * Number(product.cost || 0))}</span></div><div class="sales-stock-forecast-summary-numbers"><div class="sales-stock-forecast-metrics"><div><strong>${formatSalesForecastQuantity(forecast.onHand)}</strong><span>On Hand</span></div><b>+</b><div><strong>${formatSalesForecastQuantity(forecast.incoming)}</strong><span>Incoming</span></div><b>−</b><div><strong>${formatSalesForecastQuantity(forecast.outgoing)}</strong><span>Outgoing</span></div><b>=</b><div class="${forecast.forecasted < 0 ? "is-negative" : ""}"><strong>${formatSalesForecastQuantity(forecast.forecasted)}</strong><span>Forecasted ${unit}</span></div></div>${replenishmentDate ? `<p class="sales-stock-forecast-replenishment">Time to replenish: <strong>${replenishmentDays} day${replenishmentDays === 1 ? "" : "s"}</strong> (${escapeHtml(salesForecastDateText(replenishmentDate))})</p>` : ""}</div></div>
+    <div class="sales-stock-forecast-chart-toolbar"><span>Quantity · ${escapeHtml(unit)}</span><button type="button" class="action-button secondary" data-sales-forecast-export>Spreadsheet</button><span class="sales-stock-forecast-chart-range">All planned receipts and deliveries included</span></div>
+    <article class="sales-stock-forecast-chart-card">${chart}</article>
+    <section class="sales-stock-forecast-movements"><table><thead><tr><th>Available</th><th class="numeric-cell">Outgoing</th><th>Used by</th><th>Delivery Date</th></tr></thead><tbody>${eventRows}<tr class="sales-forecast-total-row"><th>Forecasted Inventory</th><td class="numeric-cell ${forecast.forecasted < 0 ? "is-negative" : ""}">${formatSalesForecastQuantity(forecast.forecasted)} ${escapeHtml(unit)}</td><td colspan="2"></td></tr><tr class="sales-forecast-pending-row"><th>${escapeHtml(quotationLabel)}</th><td class="numeric-cell is-negative">${forecast.pending ? `−${formatSalesForecastQuantity(forecast.pending)} ${escapeHtml(unit)}` : `0.00 ${escapeHtml(unit)}`}</td><td colspan="2">Not included in confirmed forecast</td></tr><tr class="sales-forecast-total-row"><th>Forecasted with Pending</th><td class="numeric-cell ${forecast.forecastedWithPending < 0 ? "is-negative" : ""}">${formatSalesForecastQuantity(forecast.forecastedWithPending)} ${escapeHtml(unit)}</td><td colspan="2"></td></tr></tbody></table></section>
+  </section>`;
+}
+
 function renderSalesPage() {
   if (state.salesEditor) return renderSalesDocumentForm();
   if (state.salesProductEditor) return renderSalesProductForm();
+  if (state.page === "sales-stock-forecast") return renderSalesStockForecastPage();
   if (["sales-quotations", "sales-orders"].includes(state.page)) return renderSalesOrderList();
   if (state.page === "sales-products") return renderSalesProducts();
   if (state.page === "sales-customers") return renderSalesCustomers();
@@ -3903,8 +4207,8 @@ function renderInvoiceAlternateView(rows) {
 function renderInvoicePayments() {
   const vendor = ["invoice-vendor-payments", "accounting-vendor-payments"].includes(state.page);
   const rows = state.invoicePayments.filter((payment) => Boolean(payment.vendor) === vendor).filter((payment) => !state.search || [payment.ref, payment.partner, payment.journal, payment.state].some((value) => String(value || "").toLowerCase().includes(state.search.toLowerCase())));
-  const tableRows = rows.map((payment) => `<tr><td>${invoiceDateText(payment.date)}</td><td>${escapeHtml(payment.ref)}</td><td>${escapeHtml(payment.journal || "Cash")}</td><td>${escapeHtml(payment.partner)}</td><td class="money-cell">${salesCurrency(payment.amount)}</td><td><span class="status-pill ${payment.reconciled ? "purchase" : "approval"}">${payment.reconciled ? "Reconciled" : "To Reconcile"}</span></td></tr>`);
-  return `${invoiceToolbar(vendor ? "Vendor Payments" : "Payments")}<div class="sales-section-note"><strong>${vendor ? "Supplier settlements" : "Dealer receipts"}</strong><span>Register a payment against an open invoice and reconcile it to a configured journal.</span></div>${simpleTable(["Date", "Number", "Journal", vendor ? "Vendor" : "Customer", "Amount · BDT", "State"], tableRows, "No payments recorded")}`;
+  const tableRows = rows.map((payment) => `<tr><td>${invoiceDateText(payment.date)}</td><td>${escapeHtml(payment.ref)}</td><td>${escapeHtml(payment.journal || "Cash")}</td><td>${escapeHtml(payment.method || "Manual")}</td><td>${escapeHtml(payment.recipientBank || "—")}</td><td>${escapeHtml(payment.partner)}</td><td class="money-cell">${salesCurrency(payment.amount)}</td><td><span class="status-pill ${payment.reconciled ? "purchase" : "approval"}">${payment.reconciled ? "Reconciled" : "To Reconcile"}</span></td></tr>`);
+  return `${invoiceToolbar(vendor ? "Vendor Payments" : "Payments")}<div class="sales-section-note"><strong>${vendor ? "Supplier settlements" : "Dealer receipts"}</strong><span>Register a payment against an open invoice and reconcile it to a configured journal.</span></div>${simpleTable(["Date", "Number", "Journal", "Method", "Recipient Bank", vendor ? "Vendor" : "Customer", "Amount · BDT", "State"], tableRows, "No payments recorded")}`;
 }
 
 function renderInvoicePartners() {
@@ -4052,6 +4356,31 @@ function accountingJournalFor(type) {
   return journal?.name || (type === "sales" ? "Sales" : type === "purchase" ? "Purchases" : type === "misc" ? "Miscellaneous Operations" : "Bank");
 }
 
+function accountingContactForPartner(partner, contactId = null) {
+  if (contactId !== null && contactId !== undefined && contactId !== "") {
+    const linked = state.contacts.find((contact) => String(contact.id) === String(contactId));
+    if (linked) return linked;
+  }
+  const normalizedPartner = String(partner || "").trim().toLowerCase();
+  return normalizedPartner ? state.contacts.find((contact) => String(contact.name || "").trim().toLowerCase() === normalizedPartner) || null : null;
+}
+
+function partnerControlAccountCode(partner, contactId, role) {
+  const isPayable = role === "payable";
+  const fallbackCode = isPayable ? "2000" : "1100";
+  const accountType = isPayable ? "liability" : "asset";
+  const fieldName = isPayable ? "payableAccount" : "receivableAccount";
+  const contact = accountingContactForPartner(partner, contactId);
+  const storedValue = String(contact?.[fieldName] || "").trim();
+  const storedCode = storedValue.match(/^([A-Za-z0-9.-]+)/)?.[1] || "";
+  const accounts = (state.accountingAccounts || []).filter((account) => account.active !== false && account.type === accountType && account.reconcile !== false);
+  const roleMatcher = new RegExp(isPayable ? "payables?" : "receivables?", "i");
+  const roleAccounts = accounts.filter((account) => roleMatcher.test(`${account.code} ${account.name}`));
+  const eligibleAccounts = roleAccounts.length ? roleAccounts : accounts;
+  const configured = eligibleAccounts.find((account) => String(account.code) === storedCode);
+  return configured?.code || eligibleAccounts.find((account) => String(account.code) === fallbackCode)?.code || eligibleAccounts[0]?.code || fallbackCode;
+}
+
 function accountingEntries() {
   const entries = [];
   const postedStates = ["Posted", "Partial", "Paid", "Overdue"];
@@ -4063,11 +4392,12 @@ function accountingEntries() {
     const refund = invoice.kind.endsWith("refund");
     const documentAccountCode = invoice.accountingAccountCode || (invoice.kind.startsWith("in_") ? "5000" : "4000");
     let lines;
-    if (customer && !refund) lines = [{ accountCode: "1100", partner: invoice.partner, label: invoice.ref, debit: total, credit: 0 }, { accountCode: documentAccountCode, partner: invoice.partner, label: invoice.ref, debit: 0, credit: taxExcluded }, ...(taxAmount ? [{ accountCode: "2100", partner: invoice.partner, label: `Output VAT · ${invoice.ref}`, debit: 0, credit: taxAmount }] : [])];
+    const partnerAccountCode = partnerControlAccountCode(invoice.partner, invoice.contactId, customer ? "receivable" : "payable");
+    if (customer && !refund) lines = [{ accountCode: partnerAccountCode, partner: invoice.partner, label: invoice.ref, debit: total, credit: 0 }, { accountCode: documentAccountCode, partner: invoice.partner, label: invoice.ref, debit: 0, credit: taxExcluded }, ...(taxAmount ? [{ accountCode: "2100", partner: invoice.partner, label: `Output VAT · ${invoice.ref}`, debit: 0, credit: taxAmount }] : [])];
     else if (customer && Array.isArray(invoice.journalItems) && invoice.journalItems.length) lines = invoice.journalItems.map((line) => ({ accountCode: String(line.accountCode), partner: invoice.partner, label: line.label || invoice.ref, debit: roundAccounting(line.debit), credit: roundAccounting(line.credit), analytic: line.analytic || "", taxGrids: line.taxGrids || "" }));
-    else if (customer) lines = [{ accountCode: "4010", partner: invoice.partner, label: invoice.ref, debit: taxExcluded, credit: 0 }, ...(taxAmount ? [{ accountCode: "2100", partner: invoice.partner, label: `Output VAT reversal · ${invoice.ref}`, debit: taxAmount, credit: 0 }] : []), { accountCode: "1100", partner: invoice.partner, label: invoice.ref, debit: 0, credit: total }];
-    else if (!refund) lines = [{ accountCode: documentAccountCode, partner: invoice.partner, label: invoice.ref, debit: taxExcluded, credit: 0 }, ...(taxAmount ? [{ accountCode: "1300", partner: invoice.partner, label: `Input VAT · ${invoice.ref}`, debit: taxAmount, credit: 0 }] : []), { accountCode: "2000", partner: invoice.partner, label: invoice.ref, debit: 0, credit: total }];
-    else lines = [{ accountCode: "2000", partner: invoice.partner, label: invoice.ref, debit: total, credit: 0 }, { accountCode: documentAccountCode, partner: invoice.partner, label: invoice.ref, debit: 0, credit: taxExcluded }, ...(taxAmount ? [{ accountCode: "1300", partner: invoice.partner, label: `Input VAT reversal · ${invoice.ref}`, debit: 0, credit: taxAmount }] : [])];
+    else if (customer) lines = [{ accountCode: "4010", partner: invoice.partner, label: invoice.ref, debit: taxExcluded, credit: 0 }, ...(taxAmount ? [{ accountCode: "2100", partner: invoice.partner, label: `Output VAT reversal · ${invoice.ref}`, debit: taxAmount, credit: 0 }] : []), { accountCode: partnerAccountCode, partner: invoice.partner, label: invoice.ref, debit: 0, credit: total }];
+    else if (!refund) lines = [{ accountCode: documentAccountCode, partner: invoice.partner, label: invoice.ref, debit: taxExcluded, credit: 0 }, ...(taxAmount ? [{ accountCode: "1300", partner: invoice.partner, label: `Input VAT · ${invoice.ref}`, debit: taxAmount, credit: 0 }] : []), { accountCode: partnerAccountCode, partner: invoice.partner, label: invoice.ref, debit: 0, credit: total }];
+    else lines = [{ accountCode: partnerAccountCode, partner: invoice.partner, label: invoice.ref, debit: total, credit: 0 }, { accountCode: documentAccountCode, partner: invoice.partner, label: invoice.ref, debit: 0, credit: taxExcluded }, ...(taxAmount ? [{ accountCode: "1300", partner: invoice.partner, label: `Input VAT reversal · ${invoice.ref}`, debit: 0, credit: taxAmount }] : [])];
     entries.push({ id: `invoice-${invoice.id}`, ref: invoice.ref, date: invoice.invoiceDate || inputLocalDate(), journal: accountingJournalFor(customer ? "sales" : "purchase"), source: invoiceLabel(invoice.kind), partner: invoice.partner, lines, status: "Posted", sourceId: invoice.id });
   });
   state.invoicePayments.forEach((payment) => {
@@ -4075,7 +4405,8 @@ function accountingEntries() {
     const isCash = payJournal?.type === "cash" || /cash|bKash|Nagad/i.test(String(payment.journal || ""));
     const channelCode = payment.vendor ? "1030" : "1020";
     const amount = roundAccounting(payment.amount);
-    const lines = payment.vendor ? [{ accountCode: "2000", partner: payment.partner, label: payment.ref, debit: amount, credit: 0 }, { accountCode: channelCode, partner: payment.partner, label: payment.ref, debit: 0, credit: amount }] : [{ accountCode: channelCode, partner: payment.partner, label: payment.ref, debit: amount, credit: 0 }, { accountCode: "1100", partner: payment.partner, label: payment.ref, debit: 0, credit: amount }];
+    const paymentControlCode = partnerControlAccountCode(payment.partner, payment.contactId, payment.vendor ? "payable" : "receivable");
+    const lines = payment.vendor ? [{ accountCode: paymentControlCode, partner: payment.partner, label: payment.ref, debit: amount, credit: 0 }, { accountCode: channelCode, partner: payment.partner, label: payment.ref, debit: 0, credit: amount }] : [{ accountCode: channelCode, partner: payment.partner, label: payment.ref, debit: amount, credit: 0 }, { accountCode: paymentControlCode, partner: payment.partner, label: payment.ref, debit: 0, credit: amount }];
     entries.push({ id: `payment-${payment.id}`, ref: payment.ref, date: payment.date || inputLocalDate(), journal: payment.journal || (isCash ? "Cash" : "Bank"), source: payment.vendor ? "Vendor Payment" : "Customer Receipt", partner: payment.partner, lines, status: payment.reconciled ? "Reconciled" : "To Reconcile", sourceId: payment.id });
     if (payment.reconciled) {
       const settlementAccount = payJournal?.accountCode || (isCash ? "1000" : "1010");
@@ -4497,6 +4828,8 @@ function renderShellContext() {
     brand.innerHTML = appBrandMarkup(`<span class="contacts-brand-mark" aria-hidden="true"></span>`, "Contacts");
     nav.setAttribute("aria-label", "Contacts navigation");
     nav.innerHTML = `<button type="button" data-contact-list-tab="contacts" class="${state.contactListTab === "contacts" ? "is-current" : ""}">Contacts</button><button type="button" data-contact-list-tab="suppliers" class="${state.contactListTab === "suppliers" ? "is-current" : ""}">Suppliers</button><button type="button" data-contact-list-tab="dealers" class="${state.contactListTab === "dealers" ? "is-current" : ""}">Dealers</button>`;
+    nav.insertAdjacentHTML("beforeend", '<button type="button" data-contact-list-tab="customers" class="' + (state.contactListTab === "customers" ? "is-current" : "") + '">Customers</button><button type="button" data-contact-list-tab="non-registered-dealers" class="' + (state.contactListTab === "non-registered-dealers" ? "is-current" : "") + '">Non-registered Dealers</button>');
+    nav.insertBefore(nav.querySelector('[data-contact-list-tab="customers"]'), nav.querySelector('[data-contact-list-tab="suppliers"]'));
   } else if (state.module === "apps") {
     brand.innerHTML = appBrandMarkup(`<span class="apps-brand-mark"><i></i><b></b><em></em><strong></strong></span>`, "Apps");
     nav.setAttribute("aria-label", "Apps navigation");
@@ -4816,6 +5149,98 @@ function inventoryOutgoing(product) {
     const factor = purchaseUnitFactor(product, line.uom || product.stockUom);
     return lineSum + (factor ? Math.max(0, Number(line.qty || 0) - Number(line.deliveredQty || 0)) * factor : 0);
   }, 0), 0);
+}
+
+function formatSalesAvailabilityQuantity(value) {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(Number(value || 0));
+}
+
+function salesForecastDate(value, fallback = new Date()) {
+  const text = String(value || "").trim();
+  const parsed = text ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(text) ? `${text}T00:00:00` : text) : new Date(fallback);
+  if (Number.isNaN(parsed.getTime())) return new Date(fallback);
+  parsed.setHours(0, 0, 0, 0);
+  return parsed;
+}
+
+function salesForecastDateText(value) {
+  return salesForecastDate(value).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
+}
+
+function salesForecastLineMatches(product, line) {
+  return !line?.type && (String(line?.sku || "") === String(product?.sku || "") || String(line?.product || "") === String(product?.name || ""));
+}
+
+function salesStockForecastData(product) {
+  const today = salesForecastDate(inputLocalDate());
+  const plannedDate = (value) => {
+    const date = salesForecastDate(value, today);
+    return date < today ? new Date(today) : date;
+  };
+  const incomingEvents = purchaseOrders.filter((order) => order.status === "Purchase Order").flatMap((order) => (order.lines || []).filter((line) => salesForecastLineMatches(product, line)).flatMap((line) => {
+    const factor = purchaseUnitFactor(product, line.uom || product.stockUom);
+    const quantity = factor ? purchaseReceiptOutstanding(order, line) * factor : 0;
+    return quantity > 0 ? [{ direction: "in", quantity, date: plannedDate(order.expectedArrival || order.deadline || order.orderDate), reference: order.ref || "Purchase Order", partner: order.vendor || "Supplier" }] : [];
+  }));
+  const outgoingEvents = state.salesOrders.filter((order) => ["Sales Order", "Delivered"].includes(order.status) && order.deliveryStatus !== "Delivered").flatMap((order) => (order.lines || []).filter((line) => salesForecastLineMatches(product, line)).flatMap((line) => {
+    const factor = purchaseUnitFactor(product, line.uom || product.stockUom);
+    const quantity = factor ? Math.max(0, Number(line.qty || 0) - Number(line.deliveredQty || 0)) * factor : 0;
+    return quantity > 0 ? [{ direction: "out", quantity, date: plannedDate(order.deliveryDate || order.orderDate), reference: order.ref || "Sales Order", partner: order.customer || "Customer", orderId: order.id }] : [];
+  }));
+  const quotationOrders = state.salesOrders.filter((order) => ["Quotation", "Quotation Sent"].includes(order.status));
+  const quotationLines = quotationOrders.flatMap((order) => (order.lines || []).filter((line) => salesForecastLineMatches(product, line)).flatMap((line) => {
+    const factor = purchaseUnitFactor(product, line.uom || product.stockUom);
+    const quantity = factor ? Math.max(0, Number(line.qty || 0)) * factor : 0;
+    return quantity > 0 ? [{ order, line, quantity }] : [];
+  }));
+  const onHand = Number(product?.onHand || 0);
+  const incoming = incomingEvents.reduce((sum, event) => sum + event.quantity, 0);
+  const outgoing = outgoingEvents.reduce((sum, event) => sum + event.quantity, 0);
+  const pending = quotationLines.reduce((sum, row) => sum + row.quantity, 0);
+  return {
+    today, onHand, incoming, outgoing, pending,
+    available: Math.max(0, onHand - outgoing),
+    forecasted: onHand + incoming - outgoing,
+    forecastedWithPending: onHand + incoming - outgoing - pending,
+    incomingEvents, outgoingEvents, quotationLines, quotationCount: new Set(quotationLines.map((row) => row.order.id)).size,
+  };
+}
+
+function closeSalesStockAvailability() {
+  document.querySelectorAll("[data-sales-stock-availability][aria-expanded='true']").forEach((button) => button.setAttribute("aria-expanded", "false"));
+  document.querySelector("#sales-stock-availability-popover")?.remove();
+}
+
+function openSalesStockAvailability(button) {
+  const productId = Number(button.dataset.salesStockAvailability);
+  const existing = document.querySelector("#sales-stock-availability-popover");
+  if (existing && button.getAttribute("aria-expanded") === "true") {
+    closeSalesStockAvailability();
+    return;
+  }
+  closeSalesStockAvailability();
+  const product = salesProducts.find((item) => Number(item.id) === productId);
+  if (!product) return;
+  const forecast = salesStockForecastData(product);
+  const plannedDate = [...forecast.outgoingEvents, ...forecast.incomingEvents].sort((a, b) => a.date - b.date)[0]?.date || forecast.today;
+  const popover = document.createElement("section");
+  popover.id = "sales-stock-availability-popover";
+  popover.className = "sales-stock-availability-popover";
+  popover.dataset.productId = String(productId);
+  popover.dataset.anchor = button.dataset.salesStockAvailability;
+  popover.setAttribute("role", "dialog");
+  popover.setAttribute("aria-label", "Product availability");
+  popover.innerHTML = `<strong>Availability</strong><div class="sales-stock-availability-metric"><b>Forecasted Stock</b><strong class="${forecast.forecasted < 0 ? "is-negative" : ""}">${formatSalesAvailabilityQuantity(forecast.forecasted)}</strong><span>On ${escapeHtml(salesForecastDateText(plannedDate))}</span></div><div class="sales-stock-availability-metric"><b>Available</b><strong>${formatSalesAvailabilityQuantity(forecast.available)}</strong><span>All planned operations included</span></div><button type="button" class="sales-stock-view-forecast" data-sales-stock-view-forecast="${productId}" data-sales-stock-context="${escapeHtml(button.dataset.salesStockContext || "sales")}" data-sales-stock-order="${escapeHtml(button.dataset.salesStockOrder || "")}" data-sales-stock-purchase-order="${escapeHtml(button.dataset.salesStockContext === "purchase" ? button.dataset.salesStockOrder || "" : "")}">→ &nbsp;View Forecast</button>`;
+  document.body.append(popover);
+  button.setAttribute("aria-expanded", "true");
+  const rect = button.getBoundingClientRect();
+  const popoverRect = popover.getBoundingClientRect();
+  const left = Math.max(8, Math.min(window.innerWidth - popoverRect.width - 8, rect.left + rect.width / 2 - popoverRect.width / 2));
+  const below = rect.bottom + 8;
+  const top = below + popoverRect.height <= window.innerHeight - 8 ? below : Math.max(8, rect.top - popoverRect.height - 8);
+  popover.classList.add(top < rect.top ? "is-above-anchor" : "is-below-anchor");
+  popover.style.left = `${left}px`;
+  popover.style.top = `${top}px`;
 }
 
 function inventoryNeedsReorder(product) {
@@ -7597,7 +8022,10 @@ function render() {
   else if (state.page === "activities") pageContent.innerHTML = renderActivitiesPage();
   if (["inventory-settings", "sales-settings", "crm-settings"].includes(state.page)) applySettingsSearch();
   if (state.page === "inventory-settings") syncInventorySettingDependencies();
-  if (state.invoiceEditor) syncInvoiceOtherInfoForm();
+  if (state.invoiceEditor) {
+    syncInvoiceOtherInfoForm();
+    restoreInvoiceEditorAutosave();
+  }
   inventorySyncCategorySaveState();
   if (state.salesProductEditor) {
     const allowedProductTabs = ["configuration", "promotional-offer", "purchase", "inventory", "unit-pricing"];
@@ -7618,21 +8046,28 @@ function render() {
 }
 
 function currentListTable() {
+  if (state.salesEditor) return pageContent.querySelector(".sales-order-lines-panel .sales-native-lines");
   if (state.purchaseEditor) return pageContent.querySelector(".purchase-native-lines");
   const toolbar = pageContent.querySelector(".list-toolbar");
   return toolbar?.nextElementSibling?.querySelector("table") || null;
 }
 
 function columnVisibilityKey() {
+  if (state.salesEditor) return "sales-order-lines";
   return state.purchaseEditor ? "purchase-order-lines" : state.page;
+}
+
+function columnVisibilityToken(page, index, label) {
+  return ["sales-order-lines", "purchase-order-lines"].includes(page) ? label : `${index}::${label}`;
 }
 
 function listColumnItems(table = currentListTable()) {
   if (!table) return [];
-  return [...(table.tHead?.rows?.[0]?.cells || [])].map((cell, index) => ({ index, label: cell.textContent.trim() })).filter((column) => column.label);
+  return [...(table.tHead?.rows?.[0]?.cells || [])].map((cell, index) => ({ index, label: cell.textContent.trim(), cell })).filter((column) => column.label && !column.cell.classList.contains("sale-col-line-number"));
 }
 
 function defaultColumnVisibility(page) {
+  if (["sales-order-lines", "purchase-order-lines"].includes(page)) return ["Description", "Quantity", "Unit", "Unit Price", "Taxes", "Disc.%", "Amount"];
   if (page === "rfq" || page === "orders") return [
     "2::Reference", "3::Vendor", "4::Company", "5::Buyer", "6::Order Deadline", "7::Activities", "8::Total", "9::Status",
   ];
@@ -7659,19 +8094,41 @@ function migratePurchaseDashboardColumns() {
   } catch { /* Keep the current visible columns if browser storage is unavailable. */ }
 }
 
+function migratePurchaseOrderLineColumns() {
+  const versionKey = "odooPurchaseOrderLineColumnsVersion";
+  try {
+    if (localStorage.getItem(versionKey) === "1") return;
+    const saved = JSON.parse(localStorage.getItem("odooColumnVisibility") || "{}");
+    const existing = saved["purchase-order-lines"];
+    if (Array.isArray(existing)) {
+      const labelMap = { Product: "Description", Description: "Description", Quantity: "Quantity", Unit: "Unit", "Unit Price": "Unit Price", Taxes: "Taxes", "Disc.%": "Disc.%", Amount: "Amount" };
+      const labels = existing.map((entry) => {
+        const match = String(entry).match(/^(?:\d+::)?(.*)$/);
+        return labelMap[match?.[1] || ""] || null;
+      }).filter(Boolean);
+      saved["purchase-order-lines"] = [...new Set([...labels, "Disc.%"])];
+    }
+    state.columnVisibility = { ...state.columnVisibility, ...saved };
+    localStorage.setItem("odooColumnVisibility", JSON.stringify(state.columnVisibility));
+    localStorage.setItem(versionKey, "1");
+  } catch { /* Preserve the current line view if browser storage is unavailable. */ }
+}
+
 function applySavedColumnVisibility(table = currentListTable()) {
   if (!table) return;
   const key = columnVisibilityKey();
   if (key === "rfq" || key === "orders") migratePurchaseDashboardColumns();
+  if (key === "purchase-order-lines") migratePurchaseOrderLineColumns();
   if (key === "inventory-stock") migrateInventoryStockSplitColumns();
   const visible = state.columnVisibility[key] || defaultColumnVisibility(key);
   const columns = listColumnItems(table);
   columns.forEach(({ index, label }) => {
-    const key = `${index}::${label}`;
-    const shown = !Array.isArray(visible) || visible.includes(key);
+    const token = columnVisibilityToken(key, index, label);
+    const shown = !Array.isArray(visible) || visible.includes(token);
     const head = table.tHead?.rows?.[0]?.cells[index];
     if (head) head.hidden = !shown;
     [...table.tBodies].forEach((body) => [...body.rows].forEach((row) => {
+      if (row.classList.contains("sale-special-line") || row.classList.contains("purchase-special-line")) return;
       const cell = row.cells[index];
       if (cell && !cell.hasAttribute("colspan")) cell.hidden = !shown;
     }));
@@ -7697,6 +8154,35 @@ function migrateInventoryStockSplitColumns() {
   } catch { /* Keep the saved stock columns if browser storage is unavailable. */ }
 }
 
+function positionSalesLineColumnPopover(menu) {
+  if (!menu?.isConnected) return;
+  const button = menu._salesLineColumnAnchor;
+  if (!button?.isConnected) { menu.remove(); return; }
+
+  const rect = button.getBoundingClientRect();
+  const maxHeight = Math.min(470, window.innerHeight * 0.72);
+  const gap = 6;
+  const viewportPadding = 8;
+  const naturalHeight = Math.min(menu.scrollHeight, maxHeight);
+  const spaceAbove = Math.max(0, rect.top - viewportPadding - gap);
+  const spaceBelow = Math.max(0, window.innerHeight - rect.bottom - viewportPadding - gap);
+  const openAbove = spaceBelow < naturalHeight && spaceAbove > spaceBelow;
+  const availableSpace = openAbove ? spaceAbove : spaceBelow;
+  const fittedHeight = Math.max(80, Math.min(maxHeight, availableSpace || maxHeight));
+
+  menu.style.maxHeight = `${fittedHeight}px`;
+  const renderedHeight = Math.min(menu.scrollHeight, fittedHeight);
+  const preferredTop = openAbove ? rect.top - renderedHeight - gap : rect.bottom + gap;
+  menu.style.top = `${Math.max(viewportPadding, Math.min(preferredTop, window.innerHeight - renderedHeight - viewportPadding))}px`;
+  const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+  menu.style.right = `${Math.max(viewportPadding, viewportWidth - rect.right)}px`;
+}
+
+function repositionSalesLineColumnPopover() {
+  const menu = document.querySelector(".sales-line-column-popover");
+  if (menu) positionSalesLineColumnPopover(menu);
+}
+
 function toggleColumnChooser(button) {
   const existing = document.querySelector(".column-popover");
   if (existing) { existing.remove(); return; }
@@ -7707,14 +8193,21 @@ function toggleColumnChooser(button) {
   const key = columnVisibilityKey();
   const saved = state.columnVisibility[key] || defaultColumnVisibility(key);
   const menu = document.createElement("div");
-  menu.className = "column-popover";
-  menu.innerHTML = `<strong>Optional Columns</strong>${columns.map(({ index, label }) => {
-    const key = `${index}::${label}`;
-    const checked = !Array.isArray(saved) || saved.includes(key);
+  const orderLineColumns = ["sales-order-lines", "purchase-order-lines"].includes(key);
+  menu.className = `column-popover${orderLineColumns ? " sales-line-column-popover" : ""}`;
+  menu.innerHTML = `<strong>${orderLineColumns ? "Customize View" : "Optional Columns"}</strong>${columns.map(({ index, label }) => {
+    const token = columnVisibilityToken(key, index, label);
+    const checked = !Array.isArray(saved) || saved.includes(token);
     return `<label><input type="checkbox" data-column-index="${index}" data-column-label="${escapeHtml(label)}" ${checked ? "checked" : ""}><span>${escapeHtml(label)}</span></label>`;
   }).join("")}${["activities", "inventory-stock"].includes(state.page) ? `<button class="column-reset" type="button" data-action="add-custom-column">＋ Add Custom Field</button>` : `<button class="column-reset" type="button" data-action="reset-columns">Reset to default</button>`}`;
-  const host = button.closest(".list-toolbar-right, .purchase-tabs-toolbar");
+  const host = orderLineColumns
+    ? document.body
+    : button.closest(".list-toolbar-right, .purchase-tabs-toolbar");
   host?.append(menu);
+  if (orderLineColumns) {
+    menu._salesLineColumnAnchor = button;
+    positionSalesLineColumnPopover(menu);
+  }
 }
 
 function toggleActivityPopover(button) {
@@ -8110,6 +8603,29 @@ function purchaseEmptyLineMarkup() {
   return "";
 }
 
+function sharedOrderLineCells({ context, product, productInput, detailMarkup = "", quantity = 1, quantityMin = "1", quantityStep = "1", selectedUnit = "Piece", unitMarkup = "", price = 0, taxMarkup = "", discount = 0, amount = 0, disabled = false, orderId = "", removeAction }) {
+  const isSales = context === "sales";
+  const forecast = product ? salesStockForecastData(product) : { forecasted: 0 };
+  const disabledAttribute = disabled ? "disabled" : "";
+  const quantityAttribute = isSales ? "data-sale-qty" : "data-line-qty";
+  const priceAttribute = isSales ? "data-sale-price" : "data-line-price";
+  const discountAttribute = isSales ? "data-sale-discount" : "data-line-discount";
+  const discountDisabled = isSales && state.salesSettings.lineDiscountsEnabled === false;
+  const currencyAmount = Number(amount || 0);
+  const stockButton = `<button type="button" class="sale-stock-availability-button ${product ? forecast.forecasted < 0 ? "is-negative" : "is-positive" : "is-positive"}" data-sales-stock-availability="${escapeHtml(product?.id || "")}" data-sales-stock-context="${context}" data-sales-stock-order="${escapeHtml(orderId)}" aria-label="${product ? `Availability for ${escapeHtml(product.name)}` : "Select a product to view availability"}" aria-expanded="false" title="Availability" ${product ? "" : "disabled"}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 12.5h12M3 10.5l3-3 2 1.7 4-5"/><path d="M9.5 4.2H12v2.5"/></svg></button>`;
+  const deleteIcon = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 5h9M6 5V3.5h4V5m-5.5 0 .6 8h5.8l.6-8M6.7 7.2v3.9m2.6-3.9v3.9"/></svg>`;
+  return {
+    product: `<td class="sale-product-cell shared-order-line-product">${productInput}<div class="shared-order-line-detail">${detailMarkup}</div></td>`,
+    quantity: `<td class="sale-quantity-cell"><div class="sale-quantity-control"><input ${quantityAttribute} type="number" min="${escapeHtml(quantityMin)}" step="${escapeHtml(quantityStep)}" value="${escapeHtml(quantity)}" aria-label="Quantity" ${disabledAttribute}>${stockButton}</div></td>`,
+    unit: `<td class="sale-unit-cell">${unitMarkup}</td>`,
+    price: `<td class="sale-price-cell"><input ${priceAttribute} type="number" min="0" step="any" value="${escapeHtml(price)}" aria-label="Unit price in BDT" ${disabledAttribute}></td>`,
+    tax: `<td class="sale-tax-cell">${taxMarkup}</td>`,
+    discount: `<td class="sale-discount-cell"><input class="sales-line-discount" ${discountAttribute} type="number" min="0" max="100" step="0.01" value="${escapeHtml(discount)}" aria-label="Discount percentage" ${disabledAttribute || discountDisabled ? "disabled" : ""}></td>`,
+    amount: `<td class="sale-line-subtotal sale-amount-cell purchase-line-subtotal">${salesCurrency(currencyAmount)}</td>`,
+    action: `<td class="sale-action-cell"><button type="button" class="soft-icon-button shared-order-line-delete" data-action="${escapeHtml(removeAction)}" aria-label="Delete product line" title="Delete line" ${disabledAttribute}>${deleteIcon}</button></td>`,
+  };
+}
+
 function syncPurchaseEmptyLine() {
   const tbody = document.querySelector("#order-line-items");
   if (!tbody) return;
@@ -8117,17 +8633,31 @@ function syncPurchaseEmptyLine() {
   if (!tbody.querySelector(".purchase-line, .purchase-special-line")) tbody.innerHTML = purchaseEmptyLineMarkup();
 }
 
-function purchaseLineMarkup(line = {}) {
+function purchaseLineMarkup(line = {}, readonly = false) {
+  const disabled = readonly ? "disabled" : "";
   if (line.type === "section" || line.type === "note") {
-    return `<tr class="purchase-special-line ${line.type === "note" ? "purchase-note" : ""}" data-line-type="${line.type}"><td colspan="6"><input data-purchase-description type="text" value="${escapeHtml(line.description || "")}" placeholder="${line.type === "section" ? "Section title" : "Add a note..."}" aria-label="${line.type === "section" ? "Section title" : "Purchase note"}"></td><td><button type="button" class="soft-icon-button" data-action="remove-order-line" aria-label="Remove line">×</button></td></tr>`;
+    return `<tr class="purchase-special-line ${line.type === "note" ? "purchase-note" : ""}" data-line-type="${line.type}"><td class="sale-line-grip-cell"><span class="sales-line-grip is-static" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></td><td colspan="13"><input data-purchase-description type="text" value="${escapeHtml(line.description || "")}" placeholder="${line.type === "section" ? "Section title" : "Add a note..."}" aria-label="${line.type === "section" ? "Section title" : "Purchase note"}" ${disabled}></td><td class="sale-action-cell"><button type="button" class="soft-icon-button shared-order-line-delete" data-action="remove-order-line" aria-label="Delete line" title="Delete line" ${disabled}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 5h9M6 5V3.5h4V5m-5.5 0 .6 8h5.8l.6-8M6.7 7.2v3.9m2.6-3.9v3.9"/></svg></button></td></tr>`;
   }
   const selected = salesProducts.find((item) => item.name === line.product || item.sku === line.sku) || (line.blank ? null : selectableProductRecords(null, "purchase")[0] || null);
   const selectableProducts = selectableProductRecords(selected, "purchase");
   const selectedUnit = line.uom || selected?.stockUom || "Piece";
   const units = selected ? purchaseUnits(selected) : [selectedUnit];
-  const decimal = ["kg", "L"].includes(selectedUnit);
+  const decimal = purchaseUnitAllowsFraction(selectedUnit, selected);
   const cost = line.price ?? selected?.purchasePrice ?? selected?.cost ?? 0;
-  return `<tr class="order-line purchase-line"><td><select data-purchase-product aria-label="Product"><option value="" ${selected ? "" : "selected"}>Select a product...</option>${selectableProducts.map((item) => `<option value="${item.id}" ${item.id === selected?.id ? "selected" : ""}>${escapeHtml(item.name)} · ${escapeHtml(item.sku)}</option>`).join("")}</select><small class="purchase-product-note">${escapeHtml(selected?.sku || selected?.packNote || "")}</small></td><td><input data-line-qty type="number" min="${decimal ? "0.001" : "1"}" step="${decimal ? "0.001" : "1"}" value="${escapeHtml(line.qty ?? 1)}" aria-label="Quantity"></td><td><select class="purchase-unit-select" data-line-uom data-current-unit="${escapeHtml(selectedUnit)}" aria-label="Purchase unit">${units.map((unit) => { const factor = selected && purchaseUnitFactor(selected, unit); return `<option value="${escapeHtml(unit)}" ${unit === selectedUnit ? "selected" : ""} ${factor || !selected ? "" : "disabled"}>${escapeHtml(unit)}${factor || !selected ? "" : " · configure pack"}</option>`; }).join("")}</select></td><td><input data-line-price type="number" min="0" step="0.01" value="${escapeHtml(cost)}" aria-label="Unit price in taka"></td><td><select data-line-tax aria-label="Purchase tax">${invoiceTaxOptions("in_invoice", line.taxId || selected?.purchaseTaxId || null)}</select></td><td class="line-subtotal purchase-line-subtotal">${salesCurrency(line.amount || 0)}</td><td><button type="button" class="soft-icon-button" data-action="remove-order-line" aria-label="Remove line">×</button></td></tr>`;
+  const taxId = line.taxId || selected?.purchaseTaxId || null;
+  const tax = (state.invoiceConfig.taxes || []).find((item) => item.id === Number(taxId) && item.active);
+  const discount = Number(line.discount || 0);
+  const amounts = calculateInvoiceLineAmounts(Number(line.qty ?? 1), Number(cost) * (1 - discount / 100), tax);
+  const amount = line.amount ?? amounts.subtotal + amounts.taxAmount;
+  const costPrice = Number(selected?.cost || cost);
+  const margin = (Number(cost) * (1 - discount / 100)) - costPrice;
+  const grip = `<td class="sale-line-grip-cell"><button type="button" class="sales-line-grip" data-sales-line-grip aria-label="Move purchase line" title="Drag to reorder${readonly ? " (read only)" : ""}" draggable="${!readonly}" ${disabled}><i></i><i></i><i></i><i></i><i></i><i></i></button></td>`;
+  const productInput = `<select class="sale-product-select" data-purchase-product aria-label="Product" ${disabled}><option value="" ${selected ? "" : "selected"}>Select a product...</option>${selectableProducts.map((item) => `<option value="${item.id}" ${item.id === selected?.id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}</select>`;
+  const skuAlreadyInName = Boolean(selected?.sku && String(selected.name || "").toLowerCase().startsWith(`[${String(selected.sku).toLowerCase()}]`));
+  const detailMarkup = `<small class="purchase-product-note" ${skuAlreadyInName || !selected?.sku ? "hidden" : ""}>${escapeHtml(selected?.sku || "")}</small><small class="purchase-product-note purchase-product-pack-note" ${selected?.packNote ? "" : "hidden"}>${escapeHtml(selected?.packNote || "")}</small>`;
+  const unitMarkup = `<select class="purchase-unit-select" data-line-uom data-current-unit="${escapeHtml(selectedUnit)}" aria-label="Purchase unit" ${disabled}>${units.map((unit) => { const factor = selected && purchaseUnitFactor(selected, unit); return `<option value="${escapeHtml(unit)}" ${unit === selectedUnit ? "selected" : ""} ${factor || !selected ? "" : "disabled"}>${escapeHtml(unit)}${factor || !selected ? "" : " · configure pack"}</option>`; }).join("")}</select><small class="sales-line-conversion" data-purchase-conversion-preview>${escapeHtml(selected ? productUnitConversionPreview(selected, Number(line.qty ?? 1), selectedUnit) : "")}</small>`;
+  const cells = sharedOrderLineCells({ context: "purchase", product: selected, productInput, detailMarkup, quantity: line.qty ?? 1, quantityMin: decimal ? "0.001" : "1", quantityStep: decimal ? "0.001" : "1", selectedUnit, unitMarkup, price: cost, taxMarkup: `<select data-line-tax aria-label="Purchase tax" ${disabled}>${invoiceTaxOptions("in_invoice", taxId)}</select>`, discount, amount, disabled: readonly, orderId: state.purchaseEditor?.id || "", removeAction: "remove-order-line" });
+  return `<tr class="order-line purchase-line shared-order-line">${grip}${cells.product}<td class="sale-product-variant-cell">${escapeHtml(selected?.variantLabel || selected?.variant || selected?.model || selected?.productClass || "—")}</td>${cells.quantity}${cells.unit}${cells.price}<td class="sale-unit-cost-cell">${salesCurrency(costPrice)}</td><td class="sale-margin-cell">${salesCurrency(margin)}</td><td class="sale-margin-percent-cell">${amounts.subtotal > 0 ? `${(margin / amounts.subtotal * 100).toFixed(2)}%` : "0.00%"}</td>${cells.tax}${cells.discount}<td class="sale-tax-excluded-cell">${salesCurrency(amounts.subtotal)}</td><td class="sale-tax-included-cell">${salesCurrency(amounts.subtotal + amounts.taxAmount)}</td>${cells.amount}${cells.action}</tr>`;
 }
 
 function purchasePaymentTermOptions(extra = []) {
@@ -8338,6 +8868,7 @@ function purchaseCatalogOrderLines() {
         unit: row.querySelector("[data-sale-uom]")?.value || product.stockUom || "Piece",
         qty: Number(row.querySelector("[data-sale-qty]")?.value || 0),
         price: Number(row.querySelector("[data-sale-price]")?.value || 0),
+        discount: Number(row.querySelector("[data-sale-discount]")?.value || 0),
       } : null;
     }).filter(Boolean);
   }
@@ -8350,6 +8881,7 @@ function purchaseCatalogOrderLines() {
       unit: row.querySelector("[data-line-uom]")?.value || product.stockUom || "Piece",
       qty: Number(row.querySelector("[data-line-qty]")?.value || 0),
       price: Number(row.querySelector("[data-line-price]")?.value || 0),
+      discount: Number(row.querySelector("[data-line-discount]")?.value || 0),
     } : null;
   }).filter(Boolean);
 }
@@ -8520,14 +9052,15 @@ function purchaseCatalogOrderSummaryMarkup() {
   const ref = invoiceContext ? (document.querySelector(".sales-document-heading h2")?.textContent || "New Invoice") : salesContext ? (document.querySelector("#sale-order-form [name='reference']")?.value || "New Sales Order") : (document.querySelector("#order-reference")?.value || "New Purchase Order");
   const total = document.querySelector(invoiceContext ? "#invoice-total" : salesContext ? "#sale-order-total" : "#order-total")?.textContent || salesCurrency(0);
   const grouped = new Map();
-  lines.forEach(({ product, unit, qty, price }) => {
+  lines.forEach(({ product, unit, qty, price, discount = 0 }) => {
     const key = `${product.id}::${unit}`;
-    const existing = grouped.get(key) || { product, unit, qty: 0, price };
+    const existing = grouped.get(key) || { product, unit, qty: 0, amount: 0 };
     existing.qty += qty;
+    existing.amount += price * (1 - Number(discount || 0) / 100) * qty;
     grouped.set(key, existing);
   });
   const items = [...grouped.values()];
-  return `<section class="purchase-catalog-order-card"><header><strong>${escapeHtml(ref)}</strong>${invoiceContext ? "" : `<button type="button" data-purchase-catalog-section>Add Section</button>`}</header><div class="purchase-catalog-order-lines">${items.length ? items.map((line) => `<div><span>${escapeHtml(line.product.name)}<small>${purchaseCatalogQuantity(line.qty)} ${escapeHtml(line.unit)}${line.product.packNote ? ` · ${escapeHtml(line.product.packNote)}` : ""}</small></span><strong>${salesCurrency(line.price * line.qty)}</strong></div>`).join("") : `<p>No products added yet.</p>`}</div><footer><span>${items.length} product line${items.length === 1 ? "" : "s"}</span><strong>Total <b>${escapeHtml(total)}</b></strong></footer></section>`;
+  return `<section class="purchase-catalog-order-card"><header><strong>${escapeHtml(ref)}</strong>${invoiceContext ? "" : `<button type="button" data-purchase-catalog-section>Add Section</button>`}</header><div class="purchase-catalog-order-lines">${items.length ? items.map((line) => `<div><span>${escapeHtml(line.product.name)}<small>${purchaseCatalogQuantity(line.qty)} ${escapeHtml(line.unit)}${line.product.packNote ? ` · ${escapeHtml(line.product.packNote)}` : ""}</small></span><strong>${salesCurrency(line.amount)}</strong></div>`).join("") : `<p>No products added yet.</p>`}</div><footer><span>${items.length} product line${items.length === 1 ? "" : "s"}</span><strong>Total <b>${escapeHtml(total)}</b></strong></footer></section>`;
 }
 
 function refreshPurchaseCatalogResults() {
@@ -8637,8 +9170,8 @@ function sharedCatalogLinePrice(product, unit) {
 
 function sharedCatalogRecalculate() {
   if (purchaseCatalogIsInvoice()) updateInvoiceTotal();
-  else if (purchaseCatalogContext() === "sales") updateSaleTotal();
-  else updateOrderTotal();
+  else if (purchaseCatalogContext() === "sales") { updateSaleTotal(); applySavedColumnVisibility(); }
+  else { updateOrderTotal(); applySavedColumnVisibility(); }
 }
 
 function purchaseCatalogAdjustQuantity(productId, unit, delta) {
@@ -8756,8 +9289,9 @@ function renderPurchaseOrderForm() {
   const order = purchaseOrders.find((item) => item.id === Number(state.purchaseEditor?.id)) || null;
   const ref = order?.ref || "New";
   const status = order?.status || "RFQ";
+  const editable = !["Cancelled", "Purchase Order"].includes(status);
   const orderStep = status === "Purchase Order" ? 1 : 0;
-  const lines = order?.lines?.length ? order.lines.map((line) => purchaseLineMarkup(line)).join("") : state.purchaseEditor?.prefillLines?.length ? state.purchaseEditor.prefillLines.map((line) => purchaseLineMarkup(line)).join("") : state.purchaseEditor?.prefillLine ? purchaseLineMarkup(state.purchaseEditor.prefillLine) : purchaseEmptyLineMarkup();
+  const lines = order?.lines?.length ? order.lines.map((line) => purchaseLineMarkup(line, !editable)).join("") : state.purchaseEditor?.prefillLines?.length ? state.purchaseEditor.prefillLines.map((line) => purchaseLineMarkup(line)).join("") : state.purchaseEditor?.prefillLine ? purchaseLineMarkup(state.purchaseEditor.prefillLine) : purchaseEmptyLineMarkup();
   const rawDeadline = String(order?.deadlineDate || "");
   const deadline = rawDeadline
     ? (/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(rawDeadline) ? rawDeadline.slice(0, 16) : `${rawDeadline.slice(0, 10)}T15:00`)
@@ -8766,7 +9300,7 @@ function renderPurchaseOrderForm() {
   const arrival = rawArrival.slice(0, 10);
   const defaultSupplierName = defaultPurchaseSupplier()?.name || "";
   const selectedSupplier = findPurchaseSupplier(order?.vendor || state.purchaseEditor?.vendor || defaultSupplierName);
-  const paymentTerms = order?.paymentTerms || selectedSupplier?.paymentTerms || "Immediate";
+  const paymentTerms = order?.paymentTerms || selectedSupplier?.purchasePaymentTerms || selectedSupplier?.paymentTerms || "Immediate";
   const paymentTermOptions = purchasePaymentTermOptions([paymentTerms]);
   const vendorReference = order?.vendorReference ?? selectedSupplier?.supplierReference ?? selectedSupplier?.reference ?? "";
   const company = order?.company || state.settings.companyName || "Arafat Chemica";
@@ -8780,7 +9314,6 @@ function renderPurchaseOrderForm() {
   const taxExcluded = order?.taxExcluded ?? order?.total ?? 0;
   const taxAmount = order?.taxAmount || 0;
   const total = order?.total || 0;
-  const editable = !["Cancelled", "Purchase Order"].includes(status);
   const disabled = editable ? "" : "disabled";
   const linkedBill = order ? vendorBillForPurchaseOrder(order.id) : null;
   const billStatus = linkedBill ? invoiceDisplayStatus(linkedBill) : "";
@@ -8814,7 +9347,7 @@ function renderPurchaseOrderForm() {
         <div class="field"><label for="order-destination">Deliver To <sup>?</sup></label><select id="order-destination" name="destination" ${disabled}>${["Arafat Chemica: Receipts", "Main Warehouse", "Depot Warehouse", ...(order?.destination && !["Arafat Chemica: Receipts", "Main Warehouse", "Depot Warehouse"].includes(order.destination) ? [order.destination] : [])].map((item) => `<option ${String(order?.destination || "Arafat Chemica: Receipts") === item ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}</select></div>
       </div>`;
   const tabsMarkup = renderSharedOrderTabsToolbar({ ariaLabel: "Purchase order details", tabs: [{ key: "products", label: "Products" }, { key: "other-info", label: "Other Info" }, { key: "alternatives", label: "Alternatives" }], activeTab: state.purchaseTab, tabAttribute: "purchase-tab", taxMode: state.purchaseTaxMode, taxModeAttribute: "purchase-tax-mode", disabled });
-  const panelsMarkup = `<section class="sales-tab-panel ${state.purchaseTab === "products" ? "is-active" : ""}" data-purchase-panel="products"><div class="sale-lines-scroll"><table class="order-lines sales-native-lines purchase-native-lines"><thead><tr><th>Product</th><th>Quantity</th><th>Unit</th><th>Unit Price</th><th>Taxes</th><th class="money-cell">Amount</th><th><button type="button" class="purchase-line-settings" data-action="configure-columns" aria-label="Configure product columns" title="Configure product columns">${icon("sliders")}</button></th></tr></thead><tbody id="order-line-items">${lines}</tbody>${editable ? `<tfoot class="purchase-line-footer"><tr class="purchase-action-row"><td colspan="7"><div class="sales-line-actions"><button type="button" data-action="add-order-line">Add a product</button><button type="button" data-action="add-order-section">Add a section</button><button type="button" data-action="add-order-note">Add a note</button><button type="button" data-action="purchase-catalog">Catalog</button></div></td></tr><tr class="purchase-blank-line"><td colspan="7"></td></tr><tr class="purchase-blank-line"><td colspan="7"></td></tr><tr class="purchase-blank-line"><td colspan="7"></td></tr></tfoot>` : ""}</table></div><div class="purchase-order-summary"><label class="purchase-terms"><span>Terms and Conditions</span><textarea name="terms" ${disabled} placeholder="Define your terms and conditions ...">${escapeHtml(order?.terms || "")}</textarea></label><div class="sales-total-box purchase-total-box"><div><span>Untaxed Amount</span><strong id="order-subtotal">${salesCurrency(taxExcluded)}</strong></div><div class="purchase-tax-total-row${taxAmount > 0 ? "" : " is-hidden"}" data-purchase-tax-row><span>Tax</span><strong id="order-tax-total">${salesCurrency(taxAmount)}</strong></div><div class="sales-grand-total"><span>Total</span><strong id="order-total">${salesCurrency(total)}</strong></div></div></div></section>
+  const panelsMarkup = `<section class="sales-tab-panel ${state.purchaseTab === "products" ? "is-active" : ""}" data-purchase-panel="products"><div class="sale-lines-scroll"><table class="order-lines sales-native-lines purchase-native-lines" data-line-numbers="false"><thead><tr><th class="sale-col-grip" aria-label="Reorder lines"></th><th class="sale-col-description">Description</th><th class="sale-col-variant">Product Variant</th><th class="sale-col-quantity">Quantity</th><th class="sale-col-unit">Unit</th><th class="sale-col-unit-price">Unit Price</th><th class="sale-col-unit-cost">Unit Cost</th><th class="sale-col-margin">Margin</th><th class="sale-col-margin-percent">Margin (%)</th><th class="sale-col-taxes">Taxes</th><th class="sale-col-discount">Disc.%</th><th class="sale-col-tax-excluded">Tax Excl.</th><th class="sale-col-tax-included">Tax Incl.</th><th class="sale-col-amount money-cell">Amount</th><th class="sale-col-actions"><div class="sales-line-columns-anchor"><button class="sales-line-column-button purchase-line-settings" type="button" data-action="configure-columns" aria-label="Customize purchase order line columns" title="Customize view"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14"/><circle cx="7" cy="5" r="2"/><circle cx="13" cy="10" r="2"/><circle cx="8" cy="15" r="2"/></svg></button></div></th></tr></thead><tbody id="order-line-items">${lines}</tbody>${editable ? `<tfoot class="purchase-line-footer"><tr class="purchase-action-row"><td colspan="15"><div class="sales-line-actions"><button type="button" data-action="add-order-line">Add a product</button><button type="button" data-action="add-order-section">Add a section</button><button type="button" data-action="add-order-note">Add a note</button><button type="button" data-action="purchase-catalog">Catalog</button></div></td></tr><tr class="purchase-blank-line"><td colspan="15"></td></tr><tr class="purchase-blank-line"><td colspan="15"></td></tr><tr class="purchase-blank-line"><td colspan="15"></td></tr></tfoot>` : ""}</table></div><div class="purchase-order-summary"><label class="purchase-terms"><span>Terms and Conditions</span><textarea name="terms" ${disabled} placeholder="Define your terms and conditions ...">${escapeHtml(order?.terms || "")}</textarea></label><div class="sales-total-box purchase-total-box"><div><span>Untaxed Amount</span><strong id="order-subtotal">${salesCurrency(taxExcluded)}</strong></div><div class="purchase-tax-total-row${taxAmount > 0 ? "" : " is-hidden"}" data-purchase-tax-row><span>Tax</span><strong id="order-tax-total">${salesCurrency(taxAmount)}</strong></div><div class="sales-grand-total"><span>Total</span><strong id="order-total">${salesCurrency(total)}</strong></div></div></div></section>
       <section class="sales-tab-panel purchase-other-info-panel ${state.purchaseTab === "other-info" ? "is-active" : ""}" data-purchase-panel="other-info"><div class="purchase-other-info-grid"><div class="field"><label for="order-buyer">Buyer</label><input id="order-buyer" name="buyer" ${disabled} value="${escapeHtml(buyer)}" placeholder="Buyer"></div><div class="field"><label for="order-company">Company</label><input id="order-company" name="company" ${disabled} value="${escapeHtml(company)}" placeholder="Company"></div><div class="field"><label for="order-source-document">Source Document</label><input id="order-source-document" name="sourceDocument" ${disabled} value="${escapeHtml(order?.sourceDocument || "")}" placeholder="Source document"></div><div class="field"><label for="order-incoterm">Incoterm</label><input id="order-incoterm" name="incoterm" list="purchase-incoterm-options" ${disabled} value="${escapeHtml(order?.incoterm || "")}" placeholder="Select or type an Incoterm"><datalist id="purchase-incoterm-options">${["EXW", "FCA", "CPT", "CIP", "DAP", "DPU", "DDP", "FAS", "FOB", "CFR", "CIF"].map((item) => `<option value="${item}">`).join("")}</datalist></div><label class="purchase-other-info-notes"><span>Internal Notes</span><textarea name="notes" ${disabled} placeholder="Notes for the purchase team">${escapeHtml(order?.notes || "")}</textarea></label></div></section>
       <section class="sales-tab-panel purchase-alternatives-panel ${state.purchaseTab === "alternatives" ? "is-active" : ""}" data-purchase-panel="alternatives"><div class="purchase-alternatives-content"><header><div><h3>Alternative RFQs</h3><p>Compare supplier quotations for the same products.</p></div><button type="button" class="action-button secondary" data-purchase-action="create-alternative" ${!order || state.settings.purchaseAlternatives === false || ["Cancelled", "Purchase Order"].includes(status) ? "disabled" : ""}>Add Alternative</button></header>${alternativeOrders.length ? `<div class="table-wrap"><table class="data-table purchase-alternatives-table"><thead><tr><th>Reference</th><th>Vendor</th><th>Status</th><th class="money-cell">Total</th></tr></thead><tbody>${alternativeOrders.map((alternative) => `<tr><td><button type="button" class="reference-link" data-open-order="${alternative.id}">${escapeHtml(alternative.ref)}</button></td><td>${escapeHtml(alternative.vendor || "Supplier not selected")}</td><td><span class="status-pill ${statusClass(alternative.status)}">${escapeHtml(alternative.status)}</span></td><td class="money-cell">${salesCurrency(alternative.total || 0)}</td></tr>`).join("")}</tbody></table></div>` : `<div class="purchase-alternatives-empty"><strong>${order ? "No alternative RFQs linked" : "Save this RFQ before adding alternatives"}</strong><p>${state.settings.purchaseAlternatives === false ? "Enable Purchase Alternative in Purchase settings to compare supplier quotations." : order ? "Add an alternative RFQ to compare another supplier's quotation for these products." : "Once saved, you can create and compare supplier quotations here."}</p></div>`}</div></section>`;
   const formMarkup = `<main><form id="order-form" data-id="${order?.id || ""}" data-status="${escapeHtml(status)}" autocomplete="off"><input id="order-reference" type="hidden" name="reference" value="${escapeHtml(ref)}">${renderSharedOrderDocumentCard({ headingMarkup, fieldsMarkup, tabsMarkup, panelsMarkup })}</form></main>`;
@@ -9732,11 +10265,40 @@ function currentSalesProductFlow() {
   return (state.salesEditor?.channel || order?.salesChannel) === "Point of Sale" ? "pos" : "sales";
 }
 
+function salesLineColumnMetrics(product, quantity, unit, unitPrice, discount, tax) {
+  const qty = Math.max(0, Number(quantity || 0));
+  const price = Math.max(0, Number(unitPrice || 0));
+  const discountRate = Math.min(100, Math.max(0, Number(discount || 0)));
+  const unitFactor = product ? Number(productUnitFactor(product, unit) || 1) : 1;
+  const unitCost = Math.max(0, Number(product?.cost || 0) * unitFactor);
+  const amounts = calculateInvoiceLineAmounts(qty, price * (1 - discountRate / 100), tax);
+  const margin = amounts.subtotal - unitCost * qty;
+  return {
+    unitCost,
+    margin,
+    marginPercent: amounts.subtotal > 0 ? margin / amounts.subtotal * 100 : 0,
+    taxExcluded: amounts.subtotal,
+    taxIncluded: amounts.subtotal + amounts.taxAmount,
+  };
+}
+
+function salesProductLineName(product) {
+  return String(product?.name || "");
+}
+
+function salesProductLineDescription(product, line = {}) {
+  const description = String(product?.salesDescription || product?.description || "").trim();
+  if (description) return description;
+  const savedDescription = String(line.description || "").trim();
+  return savedDescription && savedDescription !== String(product?.name || "").trim() ? savedDescription : "";
+}
+
 function saleLineMarkup(line = {}, readonly = false, flow = currentSalesProductFlow(), lineNumber = null) {
   const disabled = readonly ? "disabled" : "";
+  const gripCell = `<td class="sale-line-grip-cell"><button type="button" class="sales-line-grip" data-sales-line-grip aria-label="Move sales line" title="Drag to reorder${readonly ? " (read only)" : ""}" draggable="${!readonly}" ${readonly ? "disabled" : ""}><i></i><i></i><i></i><i></i><i></i><i></i></button></td>`;
   const numberCell = state.salesSettings.showLineNumbers === true ? `<td class="sale-line-number" data-sale-line-number>${lineNumber || ""}</td>` : "";
   if (line.type === "section" || line.type === "note") {
-    return `<tr class="sale-special-line sale-${line.type}" data-line-type="${line.type}">${numberCell}<td colspan="7"><input data-sale-description type="text" value="${escapeHtml(line.description || "")}" placeholder="${line.type === "section" ? "Section title" : "Add a note..."}" aria-label="${line.type === "section" ? "Section title" : "Order note"}" ${disabled}></td><td><button type="button" class="soft-icon-button" data-action="remove-sale-line" aria-label="Remove line" ${disabled}>×</button></td></tr>`;
+    return `<tr class="sale-special-line sale-${line.type}" data-line-type="${line.type}">${gripCell}${numberCell}<td colspan="13"><input data-sale-description type="text" value="${escapeHtml(line.description || "")}" placeholder="${line.type === "section" ? "Section title" : "Add a note..."}" aria-label="${line.type === "section" ? "Section title" : "Order note"}" ${disabled}></td><td class="sale-action-cell"><button type="button" class="soft-icon-button shared-order-line-delete" data-action="remove-sale-line" aria-label="Delete line" title="Delete line" ${disabled}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 5h9M6 5V3.5h4V5m-5.5 0 .6 8h5.8l.6-8M6.7 7.2v3.9m2.6-3.9v3.9"/></svg></button></td></tr>`;
   }
   const selected = salesProducts.find((item) => item.name === line.product || item.sku === line.sku) || selectableProductRecords(null, flow)[0] || salesProducts[0];
   const selectableProducts = selectableProductRecords(selected, flow);
@@ -9744,16 +10306,24 @@ function saleLineMarkup(line = {}, readonly = false, flow = currentSalesProductF
   const selectedUnit = units.includes(line.uom) ? line.uom : units[0];
   const decimal = salesUnitAllowsFraction(selected, selectedUnit);
   const salesTax = line.taxId || selected.salesTaxId || null;
+  const productLineName = salesProductLineName(selected);
+  const productDescription = salesProductLineDescription(selected, line);
   const offer = salesProductOffer(selected, line.consumerOfferId);
   const priceForUnit = line.price ?? salesProductOfferPrice(selected, offer, selectedUnit);
+  const tax = (state.invoiceConfig.taxes || []).find((item) => item.id === Number(salesTax) && item.active);
+  const metrics = salesLineColumnMetrics(selected, line.qty ?? 1, selectedUnit, priceForUnit, line.discount ?? 0, tax);
   const offerMarkup = readonly && line.consumerOfferName
     ? `<small class="sale-consumer-offer-snapshot" data-sale-consumer-offer-snapshot="${escapeHtml(line.consumerOfferName)}">Consumer offer · ${escapeHtml(line.consumerOfferName)}</small>`
     : salesLineConsumerOfferSelectMarkup(selected, offer?.id, readonly);
   const giftMarkup = readonly && line.consumerOfferName
     ? (line.promotionGift ? `<small class="sale-promotion-gift-fixed" data-sale-promotion-gift-snapshot="${escapeHtml(line.promotionGift)}">Gift included · ${escapeHtml(line.promotionGift)}</small>` : "")
     : salesLinePromotionGiftMarkup(selected, line.promotionGift || "", readonly, offer?.id);
-  const discountDisabled = readonly || state.salesSettings.lineDiscountsEnabled === false ? "disabled" : "";
-  return `<tr class="sale-line">${numberCell}<td><select class="sale-product-select" data-sale-product aria-label="Sales product" ${disabled}>${selectableProducts.map((item) => `<option value="${item.id}" ${selected.id === item.id ? "selected" : ""}>${escapeHtml(item.name)} · ${escapeHtml(item.sku)}</option>`).join("")}</select><small class="sales-line-note">${escapeHtml(selected.sku)}</small>${offerMarkup}${giftMarkup}</td><td><input data-sale-qty type="number" min="${decimal ? "0.001" : "1"}" step="${decimal ? "0.001" : "1"}" value="${escapeHtml(line.qty ?? 1)}" aria-label="Quantity" ${disabled}></td><td><select data-sale-uom data-current-unit="${escapeHtml(selectedUnit)}" aria-label="Sales unit" ${disabled}>${units.map((unit) => `<option value="${escapeHtml(unit)}" ${unit === selectedUnit ? "selected" : ""} ${selected.unitFactors?.[unit] ? "" : "disabled"}>${escapeHtml(unit)}${selected.unitFactors?.[unit] ? "" : " · configure pack"}</option>`).join("")}</select><small class="sales-line-note">${escapeHtml(selected.packNote)}</small><small class="sales-line-conversion" data-sale-conversion-preview>${escapeHtml(productUnitConversionPreview(selected, Number(line.qty ?? 1), selectedUnit))}</small></td><td><input data-sale-price type="number" min="0" step="any" value="${escapeHtml(priceForUnit)}" aria-label="Unit price in taka" ${disabled}></td><td><select data-sale-tax aria-label="Sales tax" ${disabled}>${invoiceTaxOptions("out_invoice", salesTax)}</select></td><td><input class="sales-line-discount" data-sale-discount type="number" min="0" max="100" step="0.01" value="${escapeHtml(line.discount ?? 0)}" aria-label="Discount percentage" ${discountDisabled}></td><td class="sale-line-subtotal">${salesCurrency(line.amount || line.subtotal || 0)}</td><td><button type="button" class="soft-icon-button" data-action="remove-sale-line" aria-label="Remove line" ${disabled}>×</button></td></tr>`;
+  const productInput = `<select class="sale-product-select" data-sale-product aria-label="Sales product" title="${escapeHtml(productLineName)}" ${disabled}>${selectableProducts.map((item) => `<option value="${item.id}" ${selected.id === item.id ? "selected" : ""}>${escapeHtml(salesProductLineName(item))}</option>`).join("")}</select>`;
+  const detailMarkup = `<small class="sale-product-description">${escapeHtml(productDescription)}</small><div class="sale-line-offer-details">${offerMarkup}${giftMarkup}</div>`;
+  const unitMarkup = `<select data-sale-uom data-current-unit="${escapeHtml(selectedUnit)}" aria-label="Sales unit" ${disabled}>${units.map((unit) => `<option value="${escapeHtml(unit)}" ${unit === selectedUnit ? "selected" : ""} ${selected.unitFactors?.[unit] ? "" : "disabled"}>${escapeHtml(unit)}${selected.unitFactors?.[unit] ? "" : " · configure pack"}</option>`).join("")}</select><small class="sales-line-note sale-uom-note">${escapeHtml(selected.packNote)}</small><small class="sales-line-conversion" data-sale-conversion-preview>${escapeHtml(productUnitConversionPreview(selected, Number(line.qty ?? 1), selectedUnit))}</small>`;
+  const taxMarkup = `<select data-sale-tax aria-label="Sales tax" ${disabled}>${invoiceTaxOptions("out_invoice", salesTax)}</select>`;
+  const cells = sharedOrderLineCells({ context: "sales", product: selected, productInput, detailMarkup, quantity: line.qty ?? 1, quantityMin: decimal ? "0.001" : "1", quantityStep: decimal ? "0.001" : "1", selectedUnit, unitMarkup, price: priceForUnit, taxMarkup, discount: line.discount ?? 0, amount: line.amount || line.subtotal || 0, disabled: readonly, orderId: state.salesEditor?.id || "", removeAction: "remove-sale-line" });
+  return `<tr class="sale-line shared-order-line">${gripCell}${numberCell}${cells.product}<td class="sale-product-variant-cell">${escapeHtml(selected.variantLabel || selected.variant || selected.model || selected.productClass || "—")}</td>${cells.quantity}${cells.unit}${cells.price}<td class="sale-unit-cost-cell">${salesCurrency(metrics.unitCost)}</td><td class="sale-margin-cell">${salesCurrency(metrics.margin)}</td><td class="sale-margin-percent-cell">${metrics.marginPercent.toFixed(2)}%</td>${cells.tax}${cells.discount}<td class="sale-tax-excluded-cell">${salesCurrency(metrics.taxExcluded)}</td><td class="sale-tax-included-cell">${salesCurrency(metrics.taxIncluded)}</td>${cells.amount}${cells.action}</tr>`;
 }
 
 function nextSalesLineNumber() {
@@ -9782,13 +10352,23 @@ function updateSaleTotal() {
     const price = Number(line.querySelector("[data-sale-price]")?.value || 0);
     const taxId = Number(line.querySelector("[data-sale-tax]")?.value || 0);
     const tax = (state.invoiceConfig.taxes || []).find((item) => item.id === taxId && item.active);
-    const discount = Math.min(100, Math.max(0, Number(line.querySelector("[data-sale-discount]")?.value || 0)));
-    const amounts = calculateInvoiceLineAmounts(qty, price * (1 - discount / 100), tax);
-    const gross = amounts.subtotal + amounts.taxAmount;
-    subtotal += amounts.subtotal;
-    taxTotal += amounts.taxAmount;
+    const discount = line.querySelector("[data-sale-discount]")?.value || 0;
+    const metrics = salesLineColumnMetrics(product, qty, unit, price, discount, tax);
+    const gross = metrics.taxIncluded;
+    subtotal += metrics.taxExcluded;
+    taxTotal += gross - metrics.taxExcluded;
     const cell = line.querySelector(".sale-line-subtotal");
-    if (cell) cell.textContent = salesCurrency(state.salesTaxMode === "included" ? gross : amounts.subtotal);
+    if (cell) cell.textContent = salesCurrency(state.salesTaxMode === "included" ? gross : metrics.taxExcluded);
+    const unitCostCell = line.querySelector(".sale-unit-cost-cell");
+    const marginCell = line.querySelector(".sale-margin-cell");
+    const marginPercentCell = line.querySelector(".sale-margin-percent-cell");
+    const taxExcludedCell = line.querySelector(".sale-tax-excluded-cell");
+    const taxIncludedCell = line.querySelector(".sale-tax-included-cell");
+    if (unitCostCell) unitCostCell.textContent = salesCurrency(metrics.unitCost);
+    if (marginCell) marginCell.textContent = salesCurrency(metrics.margin);
+    if (marginPercentCell) marginPercentCell.textContent = `${metrics.marginPercent.toFixed(2)}%`;
+    if (taxExcludedCell) taxExcludedCell.textContent = salesCurrency(metrics.taxExcluded);
+    if (taxIncludedCell) taxIncludedCell.textContent = salesCurrency(metrics.taxIncluded);
   });
   const total = subtotal + taxTotal;
   const excludedNode = form.querySelector("#sale-tax-excluded");
@@ -9836,7 +10416,7 @@ function renderSalesDocumentForm() {
   const draftCustomer = state.salesCustomers.find((item) => String(item.name || "").trim().toLowerCase() === draftCustomerName.trim().toLowerCase());
   const draftContact = state.contacts.find((item) => (draftCustomer?.contactId && String(item.id) === String(draftCustomer.contactId))
     || String(item.name || "").trim().toLowerCase() === draftCustomerName.trim().toLowerCase());
-  const terms = order?.paymentTerms || draftContact?.paymentTerms || draftCustomer?.paymentTerms || state.salesSettings.defaultPaymentTerms || "Due on receipt";
+  const terms = order?.paymentTerms || draftContact?.salesPaymentTerms || draftContact?.paymentTerms || draftCustomer?.salesPaymentTerms || draftCustomer?.paymentTerms || state.salesSettings.defaultPaymentTerms || "Due on receipt";
   const paymentTermOptions = purchasePaymentTermOptions([terms]);
   const prefillProduct = state.salesEditor?.productId ? salesProducts.find((item) => Number(item.id) === Number(state.salesEditor.productId)) : null;
   const lines = order?.lines?.length ? order.lines.map((line, index) => saleLineMarkup(line, locked, currentSalesProductFlow(), index + 1)).join("") : prefillProduct ? saleLineMarkup({ product: prefillProduct.name, sku: prefillProduct.sku }, false, currentSalesProductFlow(), 1) : saleLineMarkup({}, false, currentSalesProductFlow(), 1);
@@ -9860,7 +10440,7 @@ function renderSalesDocumentForm() {
   const customerAddress = salesCustomerAddress(customer);
   const invoiceAddress = order?.invoiceAddress ?? state.salesEditor?.invoiceAddress ?? customerAddress;
   const deliveryAddress = order?.deliveryAddress ?? state.salesEditor?.deliveryAddress ?? customerAddress;
-  const orderLinesPanel = `<section class="sales-tab-panel sales-order-lines-panel ${state.salesOrderTab === "order-lines" ? "is-active" : ""}" data-sales-panel="order-lines"><div class="sale-lines-scroll"><table class="order-lines sale-order-lines sales-native-lines purchase-native-lines"><thead><tr>${lineNumbers ? "<th>#</th>" : ""}<th>Description</th><th>Quantity</th><th>Unit</th><th>Unit Price</th><th>Taxes</th><th>Disc.%</th><th class="money-cell">Amount</th><th></th></tr></thead><tbody id="sale-line-items">${lines}</tbody>${locked ? "" : `<tfoot class="purchase-line-footer"><tr class="purchase-action-row"><td colspan="${lineNumbers ? 9 : 8}"><div class="sales-line-actions"><button type="button" data-action="add-sale-line">Add Line</button><button type="button" data-action="add-sale-section">Add Section</button><button type="button" data-action="add-sale-note">Add Note</button><button type="button" data-action="sales-catalog">Catalog</button></div></td></tr><tr class="purchase-blank-line"><td colspan="${lineNumbers ? 9 : 8}"></td></tr><tr class="purchase-blank-line"><td colspan="${lineNumbers ? 9 : 8}"></td></tr><tr class="purchase-blank-line"><td colspan="${lineNumbers ? 9 : 8}"></td></tr></tfoot>`}</table></div><div class="purchase-order-summary"><label class="purchase-terms"><span>Terms &amp; Conditions</span><textarea name="terms" ${disabled} placeholder="Define your terms and conditions ...">${escapeHtml(order?.terms ?? order?.termsNote ?? "")}</textarea></label><div><div class="sales-promo-actions">${confirmed ? "" : `<button type="button" class="action-button secondary" data-sales-order-action="coupon">Coupon Code</button><button type="button" class="action-button secondary" data-sales-order-action="reward">Reward</button>${state.salesSettings.lineDiscountsEnabled === false ? "" : `<button type="button" class="action-button secondary" data-sales-order-action="discount">Discount</button>`}`}</div><div class="sales-total-box purchase-total-box"><div><span>Untaxed Amount</span><strong id="sale-tax-excluded">${salesCurrency(order?.taxExcluded ?? order?.total ?? 0)}</strong></div><div class="purchase-tax-total-row${order?.taxAmount > 0 ? "" : " is-hidden"}" data-sale-tax-row><span>Tax</span><strong id="sale-tax-total">${salesCurrency(order?.taxAmount || 0)}</strong></div><div class="sales-grand-total"><span>Total · BDT</span><strong id="sale-order-total">${salesCurrency(order?.total || 0)}</strong></div></div></div></div></section>`;
+  const orderLinesPanel = `<section class="sales-tab-panel sales-order-lines-panel ${state.salesOrderTab === "order-lines" ? "is-active" : ""}" data-sales-panel="order-lines"><div class="sale-lines-scroll"><table class="order-lines sale-order-lines sales-native-lines" data-line-numbers="${lineNumbers}"><thead><tr><th class="sale-col-grip" aria-label="Reorder lines"></th>${lineNumbers ? "<th class=\"sale-col-line-number\">#</th>" : ""}<th class="sale-col-description">Description</th><th class="sale-col-variant">Product Variant</th><th class="sale-col-quantity">Quantity</th><th class="sale-col-unit">Unit</th><th class="sale-col-unit-price">Unit Price</th><th class="sale-col-unit-cost">Unit Cost</th><th class="sale-col-margin">Margin</th><th class="sale-col-margin-percent">Margin (%)</th><th class="sale-col-taxes">Taxes</th><th class="sale-col-discount">Disc.%</th><th class="sale-col-tax-excluded">Tax Excl.</th><th class="sale-col-tax-included">Tax Incl.</th><th class="sale-col-amount money-cell">Amount</th><th class="sale-col-actions"><div class="sales-line-columns-anchor"><button class="sales-line-column-button" type="button" data-action="configure-columns" aria-label="Customize sales order line columns" title="Customize view"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14"/><circle cx="7" cy="5" r="2"/><circle cx="13" cy="10" r="2"/><circle cx="8" cy="15" r="2"/></svg></button></div></th></tr></thead><tbody id="sale-line-items">${lines}</tbody>${locked ? "" : `<tfoot class="purchase-line-footer"><tr class="purchase-action-row"><td colspan="${lineNumbers ? 16 : 15}"><div class="sales-line-actions"><button type="button" data-action="add-sale-line">Add Line</button><button type="button" data-action="add-sale-section">Add Section</button><button type="button" data-action="add-sale-note">Add Note</button><button type="button" data-action="sales-catalog">Catalog</button></div></td></tr><tr class="purchase-blank-line"><td colspan="${lineNumbers ? 16 : 15}"></td></tr><tr class="purchase-blank-line"><td colspan="${lineNumbers ? 16 : 15}"></td></tr><tr class="purchase-blank-line"><td colspan="${lineNumbers ? 16 : 15}"></td></tr></tfoot>`}</table></div><div class="purchase-order-summary"><label class="purchase-terms"><span>Terms &amp; Conditions</span><textarea name="terms" ${disabled} placeholder="Define your terms and conditions ...">${escapeHtml(order?.terms ?? order?.termsNote ?? "")}</textarea></label><div><div class="sales-promo-actions">${confirmed ? "" : `<button type="button" class="action-button secondary" data-sales-order-action="coupon">Coupon Code</button><button type="button" class="action-button secondary" data-sales-order-action="reward">Reward</button>${state.salesSettings.lineDiscountsEnabled === false ? "" : `<button type="button" class="action-button secondary" data-sales-order-action="discount">Discount</button>`}`}</div><div class="sales-total-box purchase-total-box"><div><span>Untaxed Amount</span><strong id="sale-tax-excluded">${salesCurrency(order?.taxExcluded ?? order?.total ?? 0)}</strong></div><div class="purchase-tax-total-row${order?.taxAmount > 0 ? "" : " is-hidden"}" data-sale-tax-row><span>Tax</span><strong id="sale-tax-total">${salesCurrency(order?.taxAmount || 0)}</strong></div><div class="sales-grand-total"><span>Total · BDT</span><strong id="sale-order-total">${salesCurrency(order?.total || 0)}</strong></div></div></div></div></section>`;
   const defaultDeliveryPolicy = order?.deliveryPolicy || state.salesSettings.defaultDeliveryPolicy || "partial";
   const otherInfoPanel = `<section class="sales-tab-panel purchase-other-info-panel ${state.salesOrderTab === "other-info" ? "is-active" : ""}" data-sales-panel="other-info"><div class="purchase-other-info-grid"><div class="field"><label for="sale-customer-reference">Customer Reference</label><input id="sale-customer-reference" name="customerRef" ${disabled} value="${escapeHtml(order?.customerRef || "")}" placeholder="Customer PO / reference"></div><div class="field"><label for="sale-order-date">Order Date</label><input id="sale-order-date" name="orderDate" type="date" ${disabled} value="${escapeHtml(order?.orderDate || inputLocalDate())}"></div><div class="field"><label for="sale-salesperson">Salesperson</label><input id="sale-salesperson" name="salesperson" ${disabled} value="${escapeHtml(order?.salesperson || state.salesSettings.defaultSalesperson || state.userProfile.name || "")}" placeholder="Assign salesperson"></div><div class="field"><label for="sale-company">Company</label><input id="sale-company" name="company" ${disabled} value="${escapeHtml(salesCompany)}" placeholder="Company"></div><div class="field"><label for="sale-delivery-policy">Delivery Policy</label><select id="sale-delivery-policy" name="deliveryPolicy" ${disabled}><option ${defaultDeliveryPolicy === "all" ? "selected" : ""} value="all">Deliver all products at once</option><option ${defaultDeliveryPolicy !== "all" ? "selected" : ""} value="partial">As soon as possible</option></select></div><div class="field"><label for="sale-source-document">Source Document</label><input id="sale-source-document" name="sourceDocument" ${disabled} value="${escapeHtml(sourceDocument)}" placeholder="Source document"></div><div class="field"><label>Invoice Status</label><input value="${escapeHtml(order?.invoiceStatus || "Nothing to Invoice")}" disabled></div><div class="field"><label>Delivery Status</label><input value="${escapeHtml(order?.deliveryStatus || "To Deliver")}" disabled></div></div></section>`;
   const notesPanel = `<section class="sales-tab-panel sales-notes-panel ${state.salesOrderTab === "notes" ? "is-active" : ""}" data-sales-panel="notes"><label class="purchase-other-info-notes"><span>Internal Notes</span><textarea name="notes" ${disabled} placeholder="Add an internal note for this sales order">${escapeHtml(order?.notes || order?.otherInfoNote || "")}</textarea></label></section>`;
@@ -9872,7 +10452,6 @@ function renderSalesDocumentForm() {
         <div class="field"><label for="sale-delivery-address">Delivery Address</label><input id="sale-delivery-address" name="deliveryAddress" ${disabled} value="${escapeHtml(deliveryAddress)}" placeholder="Select a delivery address"></div>
       </div><div class="sales-field-side">
         <div class="field"><label for="sale-expiration-date">Expiration <sup>?</sup></label><input id="sale-expiration-date" name="expirationDate" type="date" ${disabled} value="${escapeHtml(order?.expirationDate || inputLocalDate(new Date(Date.now() + Number(state.salesSettings.quotationValidity || 7) * 86400000)))}"></div>
-        <div class="field"><label for="sale-pricelist">Pricelist</label><input id="sale-pricelist" name="pricelist" ${disabled} value="${escapeHtml(order?.pricelist || state.salesEditor?.pricelist || draftContact?.pricelist || draftCustomer?.pricelist || "")}" placeholder="Select a pricelist"></div>
         <div class="field"><label for="sale-payment-terms">Payment Terms</label><select id="sale-payment-terms" name="paymentTerms" ${disabled}>${paymentTermOptions.map((option) => `<option value="${escapeHtml(option)}" ${terms === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select></div>
         <div class="field"><label for="sale-referrer">Referrer</label><input id="sale-referrer" name="referrer" ${disabled} value="${escapeHtml(order?.referrer || state.salesEditor?.referrer || "")}" placeholder="Referrer"></div>
         <div class="field"><label for="sale-delivery-date">Delivery Date <sup>?</sup></label><input id="sale-delivery-date" name="deliveryDate" type="date" ${disabled} value="${escapeHtml(order?.deliveryDate || "")}"></div>
@@ -9938,7 +10517,7 @@ function renderPartnerContactFormPageLegacy() {
   const editor = state.contactEditor || {};
   const contact = state.contacts.find((item) => String(item.id) === String(editor.id)) || null;
   const kind = contact?.kind || editor.kind || "contact";
-  const kindLabel = kind === "supplier" ? "Supplier" : kind === "dealer" ? "Dealer" : "Contact";
+  const kindLabel = kind === "supplier" ? "Supplier" : kind === "dealer" ? "Dealer" : kind === "customer" ? "Customer" : kind === "non-registered-dealer" ? "Non-registered Dealer" : "Contact";
   const returnPage = editor.returnPage || "contacts";
   const returnLabel = pageLabels[returnPage] || "Contacts";
   const input = (label, name, value = "", attrs = "") => `<div class="erp-contact-field"><label for="partner-${name}">${label}</label><input id="partner-${name}" name="${name}" value="${escapeHtml(value)}" ${attrs}></div>`;
@@ -9967,6 +10546,8 @@ function contactRelatedRecords(contact) {
   const crm = window.crmModule?.getWorkspace?.() || {};
   const opportunities = (crm.opportunities || []).filter((item) => contactRecordMatchesPartner(contact, item, ["contactId", "partnerId"], ["contactName", "company"]));
   const opportunityIds = new Set(opportunities.map((item) => String(item.id)));
+  const suppliedSkus = new Set(productsForSupplier(contact).map((product) => String(product.sku || "")));
+  const lots = (state.inventoryBalances || []).filter((balance) => suppliedSkus.has(String(balance.sku || "")) && (balance.lot || balance.serial || balance.lotName || balance.serialNumber));
   return {
     opportunities,
     sales: state.salesOrders.filter((item) => contactRecordMatchesPartner(contact, item, ["contactId", "customerId", "partnerId"], ["customer", "partner"])),
@@ -9974,6 +10555,9 @@ function contactRelatedRecords(contact) {
     subscriptions: state.inventoryProductSubscriptions.filter((item) => contactRecordMatchesPartner(contact, item, ["contactId", "customerContactId", "partnerId"], ["customer", "partner"])),
     purchaseOrders: purchaseOrders.filter((item) => contactRecordMatchesPartner(contact, item, ["contactId", "vendorContactId", "supplierId"], ["vendor", "supplier"])),
     receipts: state.purchaseReceipts.filter((item) => contactRecordMatchesPartner(contact, item, ["contactId", "vendorContactId", "supplierId"], ["vendor", "supplier"])),
+    lots,
+    repairs: [],
+    mandates: [],
     deliveries: state.inventoryDeliveries.filter((item) => contactRecordMatchesPartner(contact, item, ["contactId", "customerId", "partnerId"], ["customer", "partner"])),
     tasks: (crm.activities || []).filter((item) => opportunityIds.has(String(item.recordId))),
   };
@@ -9983,7 +10567,7 @@ function openContactRelatedRecords(contactId, section = "all") {
   const contact = state.contacts.find((item) => String(item.id) === String(contactId));
   if (!contact) { showToast("Save this contact before opening linked records."); return; }
   const related = contactRelatedRecords(contact);
-  const titleBySection = { opportunities: "Opportunities", sales: "Sales Orders & Quotations", invoices: "Invoices & Vendor Bills", subscriptions: "Subscriptions", purchaseOrders: "Purchase Orders", receipts: "Purchase Receipts", deliveries: "Inventory Deliveries", tasks: "Activities" };
+  const titleBySection = { opportunities: "Opportunities", sales: "Sales Orders & Quotations", invoices: "Documents", subscriptions: "Subscriptions", purchaseOrders: "Purchases", receipts: "Purchase Receipts", deliveries: "Inventory Deliveries", tasks: "Activities", lots: "Lots/Serial Numbers", repairs: "Repairs", mandates: "Direct Debit Mandates" };
   const groups = Object.entries(titleBySection).filter(([key]) => section === "all" || key === section).map(([key, title]) => {
     const rows = related[key] || [];
     const buttons = rows.map((record) => {
@@ -10019,7 +10603,7 @@ function contactSmartPanelMarkup({ contact = null, related = null, salesCount = 
     "✓": `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg>`,
   };
   const counts = related || (contact ? contactRelatedRecords(contact) : {});
-  const savedAttributes = (section) => contact ? { "data-contact-related": section || "all", "data-id": contact.id } : {};
+  const relatedAttributes = (section) => ({ "data-contact-related": section || "all", "data-id": contact?.id || "" });
   const unsaved = !contact;
   const items = [
     ["opportunities", "★", "Opportunities", String(counts.opportunities?.length || 0), "opportunities"],
@@ -10032,16 +10616,38 @@ function contactSmartPanelMarkup({ contact = null, related = null, salesCount = 
   ].map(([key, icon, label, value, section]) => ({
     iconHtml: icons[icon] || escapeHtml(icon), label, value,
     className: "erp-contact-smart-button",
-    attributes: { "data-contact-smart": key, ...savedAttributes(section) },
-    disabled: unsaved,
-    title: unsaved ? "Save this contact to open related records" : "",
+    attributes: { "data-contact-smart": key, ...relatedAttributes(section) },
+    title: unsaved ? "Save this contact to open linked records" : "",
   }));
-  items.push({
-    contentHtml: `More<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 6 4.5 4 4.5-4"/></svg>`, className: "erp-contact-smart-more", ariaLabel: "More contact records",
-    attributes: { "data-contact-related": contact ? "all" : undefined, "data-id": contact?.id },
-    disabled: unsaved, title: unsaved ? "Save this contact to open related records" : "",
+  const menuIcons = {
+    purchaseOrders: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 9h18"/></svg>',
+    invoices: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5zM15 3v5h5M8 12h8M8 16h8"/></svg>',
+    lots: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>',
+    mandates: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h11l4 4v7M15 3v5h5"/><path d="m8 18 8-8 3 3-8 8-4 1z"/></svg>',
+    repairs: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6a5 5 0 0 0-6.3 6.3L3 17l4 4 4.7-4.7A5 5 0 0 0 18 10l-3 3-4-4z"/></svg>',
+    website: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>',
+    shareholders: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8.2" cy="7.5" r="3.1"/><path d="M2 20v-.9a6.2 6.2 0 0 1 12.4 0v.9z"/><circle cx="17.1" cy="8" r="2.4"/><path d="M15.4 14.1a5.1 5.1 0 0 1 6.4 4.9V20h-4.2v-.9a7.5 7.5 0 0 0-2.2-5z"/></svg>',
+  };
+  const moreItems = [
+    { key: "purchaseOrders", label: "Purchases", value: String(counts.purchaseOrders?.length || 0), icon: menuIcons.purchaseOrders, attributes: relatedAttributes("purchaseOrders") },
+    { key: "invoices", label: "Documents", value: String(counts.invoices?.length || 0), icon: menuIcons.invoices, attributes: relatedAttributes("invoices") },
+    { key: "lots", label: "Lots/Serial Numbers", value: null, icon: menuIcons.lots, attributes: { "data-module-page": "inventory-lots" } },
+    { key: "mandates", label: "Direct Debit Mandates", value: String(counts.mandates?.length || 0), icon: menuIcons.mandates, attributes: relatedAttributes("mandates") },
+    { key: "repairs", label: "Repairs", value: String(counts.repairs?.length || 0), icon: menuIcons.repairs, attributes: { "data-module-page": "inventory-repairs" } },
+    { key: "website", label: "Go to Website", value: null, icon: menuIcons.website, attributes: { "data-contact-website": "true", "data-id": contact?.id || "" } },
+    { key: "shareholders", label: "Shareholders", value: String(contact?.beneficialOwners?.length || 0), icon: menuIcons.shareholders, attributes: { "data-contact-tab": "ubo" } },
+  ].map((item) => ({
+    label: item.label,
+    value: item.value,
+    iconHtml: '<span class="erp-contact-smart-menu-icon' + (item.key === "website" ? " erp-contact-smart-menu-icon-website" : item.key === "shareholders" ? " erp-contact-smart-menu-icon-shareholders" : "") + '" aria-hidden="true">' + item.icon + '</span>',
+    attributes: item.attributes,
+    title: unsaved && ["purchaseOrders", "invoices", "mandates"].includes(item.key) ? "Save this contact to open linked records" : "",
+  }));
+  return window.ERPSharedSmartPanel.render({
+    className: "erp-contact-smartbar", ariaLabel: "Related contact records",
+    moreClass: "erp-contact-smart-more", moreButtonClass: "erp-contact-smart-more-button", menuClass: "erp-contact-smart-menu",
+    items, moreItems,
   });
-  return window.ERPSharedSmartPanel.render({ className: "erp-contact-smartbar", ariaLabel: "Related contact records", items });
 }
 
 function openContactChatterComposer(type) {
@@ -10068,13 +10674,15 @@ function renderPartnerContactFormPage() {
   const editor = state.contactEditor || {};
   const contact = state.contacts.find((item) => String(item.id) === String(editor.id)) || null;
   const kind = contact?.kind || editor.kind || "contact";
-  const kindLabel = kind === "supplier" ? "Supplier" : kind === "dealer" ? "Dealer" : "Contact";
+  const kindLabel = kind === "supplier" ? "Supplier" : kind === "dealer" ? "Dealer" : kind === "customer" ? "Customer" : kind === "non-registered-dealer" ? "Non-registered Dealer" : "Contact";
   const returnPage = editor.returnPage || "contacts";
   const returnLabel = pageLabels[returnPage] || "Contacts";
   const value = (key, fallback = "") => contact?.[key] ?? fallback;
   const isSupplierRole = contact ? contactHasSupplierRole(contact) : kind === "supplier";
-  const isCustomerRole = contact ? contactHasCustomerRole(contact) : kind === "dealer";
-  const contactRoleSummary = [isCustomerRole ? "Customer" : "", isSupplierRole ? "Supplier" : ""].filter(Boolean).join(" · ") || "Contact";
+  const isCustomerRole = contact ? contactHasDirectCustomerRole(contact) : kind === "customer";
+  const isDealerRole = contact ? contactHasDealerRole(contact) : kind === "dealer";
+  const isNonRegisteredDealerRole = contact ? contactHasNonRegisteredDealerRole(contact) : kind === "non-registered-dealer";
+  const contactRoleSummary = [isCustomerRole ? "Customer" : "", isSupplierRole ? "Supplier" : "", isDealerRole ? "Dealer" : "", isNonRegisteredDealerRole ? "Non-registered Dealer" : ""].filter(Boolean).join(" · ") || "Contact";
   const field = (label, name, current = "", attrs = "") => `<div class="erp-contact-field"><label for="partner-${name}">${label}</label><input id="partner-${name}" name="${name}" value="${escapeHtml(current)}" ${attrs}></div>`;
   const select = (label, name, options, selected = "") => `<div class="erp-contact-field"><label for="partner-${name}">${label}</label><select id="partner-${name}" name="${name}"><option value="">Select ${escapeHtml(label.toLowerCase())}</option>${options.map((item) => { const [option, title] = Array.isArray(item) ? item : [item, item]; return `<option value="${escapeHtml(option)}" ${String(selected) === String(option) ? "selected" : ""}>${escapeHtml(title)}</option>`; }).join("")}</select></div>`;
   const cell = (name, current = "", type = "text", placeholder = "") => `<input data-contact-field="${name}" type="${type}" ${type === "number" ? 'min="0" step="0.01"' : ""} value="${escapeHtml(current)}" placeholder="${escapeHtml(placeholder)}" aria-label="${escapeHtml(placeholder || name)}">`;
@@ -10133,9 +10741,45 @@ function renderPartnerContactFormPage() {
     </article></form></main><aside class="erp-finance-chatter"><div class="erp-chatter-actions"><button type="button" class="action-button" data-contact-chatter="message">Send message</button><button type="button" class="action-button secondary" data-contact-chatter="note">Log note</button><button type="button" class="action-button secondary" data-contact-whatsapp>WhatsApp</button><button type="button" class="action-button secondary" data-contact-chatter="activity">Activity</button></div><label class="erp-contact-chatter-search" hidden><span>Search messages</span><input type="search" data-contact-chatter-search placeholder="Search messages..."></label><input type="file" data-contact-chatter-attachment accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,.csv" hidden>${chatterMarkup}${attachmentMarkup}<p class="erp-chatter-note">Messages, notes, activities, followers and attachments are saved with this contact.</p></aside></div></section>`;
 }
 
+function syncPartnerContactRolePanels(form) {
+  if (!form) return;
+  const roles = Object.fromEntries([...form.querySelectorAll("[data-partner-role]")].map((input) => [input.dataset.partnerRole, input.checked]));
+  const hasAnyRole = Object.values(roles).some(Boolean);
+  form.querySelectorAll("[data-partner-kind-panel]").forEach((panel) => {
+    const panelRole = panel.dataset.partnerKindPanel;
+    if (panelRole === "supplier") panel.hidden = !roles.supplier;
+    else if (panelRole === "dealer") panel.hidden = !(roles.dealer || roles.nonRegisteredDealer);
+    else if (panelRole === "non-registered-dealer") panel.hidden = !roles.nonRegisteredDealer;
+    else if (panelRole === "customer") panel.hidden = !(roles.customer || roles.dealer || roles.nonRegisteredDealer);
+    else if (panelRole === "contact") panel.hidden = hasAnyRole;
+    else panel.hidden = !roles[panelRole];
+  });
+}
+
 function alignPartnerContactFormToOdoo() {
   const form = pageContent.querySelector("#partner-contact-form");
   if (!form) return;
+  const roleControls = form.querySelector(".erp-contact-role-controls");
+  if (roleControls) {
+    const savedContact = state.contacts.find((item) => String(item.id) === String(state.contactEditor?.id)) || null;
+    [
+      { role: "dealer", name: "isDealer", label: "Dealer", detail: "Dealer customer accounts", checked: savedContact ? contactHasDealerRole(savedContact) : state.contactEditor?.kind === "dealer" },
+      { role: "nonRegisteredDealer", name: "isNonRegisteredDealer", label: "Non-registered Dealer", detail: "Non-registered dealer accounts", checked: savedContact ? contactHasNonRegisteredDealerRole(savedContact) : state.contactEditor?.kind === "non-registered-dealer" },
+    ].forEach((definition) => {
+      if (roleControls.querySelector('[data-partner-role="' + definition.role + '"]')) return;
+      const label = document.createElement("label");
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.name = definition.name;
+      input.value = "1";
+      input.dataset.partnerRole = definition.role;
+      input.checked = Boolean(definition.checked);
+      const detail = document.createElement("small");
+      detail.textContent = definition.detail;
+      label.append(input, document.createTextNode(" " + definition.label + " "), detail);
+      roleControls.append(label);
+    });
+  }
   const page = form.closest(".erp-contact-record-page");
   const meta = form.querySelector(".erp-contact-meta");
   const kindControl = form.querySelector("[name='kind']");
@@ -10159,11 +10803,110 @@ function alignPartnerContactFormToOdoo() {
   if (territoryField && salesPanel) {
     const dealerArea = document.createElement("div");
     dealerArea.dataset.partnerKindPanel = "dealer";
-    dealerArea.hidden = (form.querySelector('[name="kind"]')?.value || state.contactEditor?.kind) !== "dealer";
+    dealerArea.hidden = !(form.querySelector('[data-partner-role="dealer"]')?.checked || form.querySelector('[data-partner-role="nonRegisteredDealer"]')?.checked);
     dealerArea.className = "erp-contact-dealer-area";
     dealerArea.append(territoryField);
     salesPanel.append(dealerArea);
   }
+  syncPartnerContactRolePanels(form);
+
+  const accountingPanel = form.querySelector('[data-contact-panel="accounting"]');
+  const accountingColumns = accountingPanel?.querySelector(".erp-contact-columns");
+  const generalAccountingSection = accountingColumns?.querySelector(".erp-contact-tab-section");
+  const customerAccountingSection = accountingColumns?.querySelectorAll(".erp-contact-tab-section")?.[1];
+  const savedContact = state.contacts.find((item) => String(item.id) === String(state.contactEditor?.id)) || null;
+  const makeAccountingSelect = (name, labelText, options, currentValue, placeholder = "Select an option") => {
+    if (form.querySelector(`[name="${name}"]`)) return form.querySelector(`[name="${name}"]`).closest(".erp-contact-field");
+    const wrapper = document.createElement("div");
+    wrapper.className = "erp-contact-field";
+    const label = document.createElement("label");
+    label.htmlFor = `partner-${name}`;
+    label.textContent = labelText;
+    const select = document.createElement("select");
+    select.id = `partner-${name}`;
+    select.name = name;
+    select.append(new Option(placeholder, ""));
+    const normalized = (options || []).map((item) => Array.isArray(item) ? [String(item[0]), String(item[1])] : [String(item), String(item)]);
+    if (currentValue && !normalized.some(([optionValue]) => optionValue === String(currentValue))) normalized.push([String(currentValue), String(currentValue)]);
+    normalized.forEach(([value, title]) => select.append(new Option(title, value)));
+    select.value = String(currentValue || "");
+    wrapper.append(label, select);
+    return wrapper;
+  };
+  const swapAccountInput = (name, type, fallbackCode) => {
+    const input = form.querySelector(`[name="${name}"]`);
+    if (!input || input.tagName === "SELECT") return;
+    const allAccounts = (state.accountingAccounts || []).filter((account) => account.active !== false && account.type === type && account.reconcile !== false);
+    const matcher = name === "payableAccount" ? /payables?/i : /receivables?/i;
+    const roleAccounts = allAccounts.filter((account) => matcher.test(`${account.code} ${account.name}`));
+    const accounts = roleAccounts.length ? roleAccounts : allAccounts;
+    const storedCode = String(input.value || "").trim().match(/^([A-Za-z0-9.-]+)/)?.[1] || "";
+    const selectedCode = accounts.some((account) => String(account.code) === storedCode) ? storedCode : accounts.some((account) => String(account.code) === fallbackCode) ? fallbackCode : String(accounts[0]?.code || "");
+    const select = document.createElement("select");
+    select.id = input.id;
+    select.name = name;
+    select.append(new Option(`Select ${name === "payableAccount" ? "payable" : "receivable"} account`, ""));
+    accounts.forEach((account) => select.append(new Option(`${account.code} · ${account.name}`, String(account.code))));
+    select.value = selectedCode;
+    input.replaceWith(select);
+  };
+  if (generalAccountingSection) {
+    swapAccountInput("receivableAccount", "asset", "1100");
+    swapAccountInput("payableAccount", "liability", "2000");
+    const fiscalOptions = [...new Set((state.invoiceConfig.collections?.["invoice-fiscal-positions"] || []).map((item) => typeof item === "string" ? item : item?.name).filter(Boolean))];
+    const fiscalField = makeAccountingSelect("fiscalPosition", "Fiscal Position", fiscalOptions, savedContact?.fiscalPosition || "", "No fiscal position");
+    if (fiscalField && !fiscalField.parentElement) generalAccountingSection.append(fiscalField);
+  }
+  if (accountingColumns && customerAccountingSection) {
+    customerAccountingSection.dataset.partnerKindPanel = "customer";
+    const customerTerms = savedContact?.salesPaymentTerms || (!contactHasSupplierRole(savedContact) ? savedContact?.paymentTerms : "") || state.salesSettings.defaultPaymentTerms || "Due on receipt";
+    const salesTerms = makeAccountingSelect("salesPaymentTerms", "Customer Payment Terms", purchasePaymentTermOptions([customerTerms]), customerTerms);
+    customerAccountingSection.append(salesTerms);
+  }
+  if (accountingColumns && !accountingPanel.querySelector("[data-contact-supplier-accounting]")) {
+    const supplierSection = document.createElement("section");
+    supplierSection.className = "erp-contact-tab-section erp-contact-supplier-accounting";
+    supplierSection.dataset.partnerKindPanel = "supplier";
+    supplierSection.dataset.contactSupplierAccounting = "true";
+    supplierSection.hidden = !form.querySelector('[data-partner-role="supplier"]')?.checked;
+    const heading = document.createElement("h3");
+    heading.textContent = "SUPPLIER BILL SETTINGS";
+    supplierSection.append(heading);
+    const termsSelect = form.querySelector('[data-partner-kind-panel="supplier"] select[name="paymentTerms"]');
+    if (termsSelect) {
+      const termsField = termsSelect.closest(".erp-contact-field");
+      const termsLabel = termsField?.querySelector("label");
+      if (termsLabel) termsLabel.textContent = "Purchase Payment Terms";
+      termsSelect.name = "purchasePaymentTerms";
+      if (termsField) supplierSection.append(termsField);
+    }
+    const autoPost = form.querySelector('[name="autoPostBills"]')?.closest(".erp-contact-field");
+    if (autoPost) supplierSection.append(autoPost);
+    const paymentMethods = [...new Set(["Manual", "Bank Transfer", "Cash", "Cheque", "Mobile Financial Service", ...(state.invoiceConfig.collections?.["invoice-payment-methods"] || []).map((item) => typeof item === "string" ? item : item?.name).filter(Boolean), savedContact?.vendorPaymentMethod].filter(Boolean))];
+    const methodField = makeAccountingSelect("vendorPaymentMethod", "Preferred Payment Method", paymentMethods, savedContact?.vendorPaymentMethod || "Manual");
+    if (methodField && !methodField.parentElement) supplierSection.append(methodField);
+    const bankOptions = (Array.isArray(savedContact?.bankAccounts) ? savedContact.bankAccounts : []).filter((bank) => bank && Object.values(bank).some((entry) => String(entry || "").trim())).map((bank) => {
+      const bankName = String(bank.bank || bank.name || "Bank account").trim();
+      const account = String(bank.accountNumber || "").replace(/\s+/g, "");
+      const holder = String(bank.accountHolder || "").trim();
+      const label = [bankName, account ? `•••• ${account.slice(-4)}` : "", holder].filter(Boolean).join(" · ");
+      return [label, label];
+    });
+    const defaultBankField = makeAccountingSelect("defaultRecipientBank", "Default Recipient Bank", bankOptions, savedContact?.defaultRecipientBank || bankOptions[0]?.[0] || "", bankOptions.length ? "Select a bank account" : "No bank account configured");
+    if (defaultBankField && !defaultBankField.parentElement) supplierSection.append(defaultBankField);
+    const related = savedContact ? contactRelatedRecords(savedContact) : { invoices: [] };
+    const bills = (related.invoices || []).filter((invoice) => String(invoice.kind || "").startsWith("in_") && !String(invoice.kind || "").endsWith("refund"));
+    const billTotal = bills.reduce((sum, invoice) => sum + Number(invoice.total || 0), 0);
+    const openBalance = bills.filter((invoice) => ["Posted", "Partial", "Overdue"].includes(invoice.status)).reduce((sum, invoice) => sum + Number(invoice.amountDue ?? invoice.total ?? 0), 0);
+    const payments = state.invoicePayments.filter((payment) => payment.vendor && (String(payment.contactId || "") === String(savedContact?.id || "") || String(payment.partner || "").trim().toLowerCase() === String(savedContact?.name || "").trim().toLowerCase()));
+    const paymentTotal = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    const summary = document.createElement("div");
+    summary.className = "erp-contact-ledger-summary";
+    summary.innerHTML = `<h3>SUPPLIER TRANSACTIONS</h3><div><span>Vendor Bills</span><strong>${bills.length} · ${salesCurrency(billTotal)}</strong></div><div><span>Open Payable</span><strong>${salesCurrency(openBalance)}</strong></div><div><span>Payments Registered</span><strong>${salesCurrency(paymentTotal)}</strong></div><footer><button type="button" class="text-link" data-module-page="invoice-vendor-bills">View Vendor Bills</button><button type="button" class="text-link" data-module-page="invoice-vendor-payments">View Payments</button></footer>`;
+    supplierSection.append(summary);
+    accountingColumns.append(supplierSection);
+  }
+  syncPartnerContactRolePanels(form);
 
   const avatar = form.querySelector("[data-contact-avatar-preview]");
   if (avatar && !avatar.querySelector("img")) {
@@ -10769,7 +11512,7 @@ function openCreditNoteAccountCreate(context = "line", index = 0) {
   modalRoot.querySelector(".modal-card")?.classList.add("credit-account-create-modal");
 }
 
-function updateInvoiceTotal() {
+function updateInvoiceTotal({ updateJournal = true } = {}) {
   let subtotal = 0;
   let taxTotal = 0;
   const form = document.querySelector("#invoice-form");
@@ -10807,9 +11550,9 @@ function updateInvoiceTotal() {
   if (taxNode) taxNode.textContent = salesCurrency(taxTotal);
   if (totalNode) totalNode.textContent = salesCurrency(subtotal + taxTotal);
   const journalPreview = form?.querySelector("#invoice-journal-preview");
-  if (journalPreview && form?.dataset.kind === "out_refund") {
+  if (updateJournal && journalPreview && form?.dataset.kind === "out_refund") {
     journalPreview.innerHTML = creditNoteJournalRowsMarkup(journalLines, taxTotal, subtotal + taxTotal, form.querySelector("[name='partner']")?.value || "", form.querySelector("[name='ref']")?.value || "Draft");
-  } else if (journalPreview) {
+  } else if (updateJournal && journalPreview) {
     const draft = { kind: form.dataset.kind || "out_invoice", partner: form.querySelector("[name='partner']")?.value || "", ref: form.querySelector("[name='ref']")?.value || "Draft", lines: journalLines };
     journalPreview.innerHTML = invoicePostingPreview(draft, subtotal, taxTotal, subtotal + taxTotal);
   }
@@ -10849,6 +11592,7 @@ function invoiceDueDate(dateValue, terms) {
 function invoicePostingPreview(invoice, taxExcluded, taxAmount, total) {
   const customer = invoice.kind.startsWith("out_");
   const refund = invoice.kind.endsWith("refund");
+  const partnerAccountCode = partnerControlAccountCode(invoice.partner, invoice.contactId, customer ? "receivable" : "payable");
   const salesCode = accountingUsableJournals().find((journal) => journal.type === "sales")?.accountCode || "4000";
   const purchaseCode = accountingUsableJournals().find((journal) => journal.type === "purchase")?.accountCode || "6000";
   const lineAccounts = new Map();
@@ -10866,10 +11610,10 @@ function invoicePostingPreview(invoice, taxExcluded, taxAmount, total) {
       : [code, accountingAccountName(code), taxExcluded, 0]);
   }
   let rows;
-  if (customer && !refund) rows = [["1100", "Accounts Receivable", total, 0], ...accountRows, ...(taxAmount ? [["2100", "Output VAT Payable", 0, taxAmount]] : [])];
-  else if (customer) rows = [["4010", "Sales Returns", taxExcluded, 0], ...(taxAmount ? [["2100", "Output VAT Payable", taxAmount, 0]] : []), ["1100", "Accounts Receivable", 0, total]];
-  else if (!refund) rows = [...accountRows, ...(taxAmount ? [["1300", "Input VAT Recoverable", taxAmount, 0]] : []), ["2000", "Accounts Payable", 0, total]];
-  else rows = [["2000", "Accounts Payable", total, 0], ...accountRows.map(([code, name, debit, credit]) => [code, name, credit, debit]), ...(taxAmount ? [["1300", "Input VAT Recoverable", 0, taxAmount]] : [])];
+  if (customer && !refund) rows = [[partnerAccountCode, accountingAccountName(partnerAccountCode), total, 0], ...accountRows, ...(taxAmount ? [["2100", "Output VAT Payable", 0, taxAmount]] : [])];
+  else if (customer) rows = [["4010", "Sales Returns", taxExcluded, 0], ...(taxAmount ? [["2100", "Output VAT Payable", taxAmount, 0]] : []), [partnerAccountCode, accountingAccountName(partnerAccountCode), 0, total]];
+  else if (!refund) rows = [...accountRows, ...(taxAmount ? [["1300", "Input VAT Recoverable", taxAmount, 0]] : []), [partnerAccountCode, accountingAccountName(partnerAccountCode), 0, total]];
+  else rows = [[partnerAccountCode, accountingAccountName(partnerAccountCode), total, 0], ...accountRows.map(([code, name, debit, credit]) => [code, name, credit, debit]), ...(taxAmount ? [["1300", "Input VAT Recoverable", 0, taxAmount]] : [])];
   return rows.map(([code, name, debit, credit]) => `<tr><td>${escapeHtml(code)}</td><td>${escapeHtml(name)}</td><td>${escapeHtml(invoice.partner || "—")}</td><td>${escapeHtml(invoice.ref || "Draft")}</td><td class="money-cell">${accountingAmount(debit)}</td><td class="money-cell">${accountingAmount(credit)}</td></tr>`).join("");
 }
 
@@ -10907,13 +11651,13 @@ function syncInvoiceOtherInfoForm() {
     const holder = String(bank?.accountHolder || '').trim();
     return [bankName, account ? '•••• ' + account.slice(-4) : '', holder].filter(Boolean).join(' · ');
   }).filter(Boolean))];
-  const fiscalNames = [...new Set([...(state.invoiceConfig.collections?.['invoice-fiscal-positions'] || []).map((item) => typeof item === 'string' ? item : item?.name), record?.fiscalPosition].filter(Boolean))];
-  const paymentNames = [...new Set(['Manual', ...(state.salesConfig?.['sales-payments'] || []), record?.paymentMethod].filter(Boolean))];
+  const fiscalNames = [...new Set([...(state.invoiceConfig.collections?.['invoice-fiscal-positions'] || []).map((item) => typeof item === 'string' ? item : item?.name), contact?.fiscalPosition, record?.fiscalPosition].filter(Boolean))];
+  const paymentNames = [...new Set(['Manual', ...(state.salesConfig?.['sales-payments'] || []), kind.startsWith('in_') ? contact?.vendorPaymentMethod : '', record?.paymentMethod].filter(Boolean))];
   const incotermNames = ['EXW · Ex Works', 'FCA · Free Carrier', 'CPT · Carriage Paid To', 'CIP · Carriage and Insurance Paid To', 'DAP · Delivered at Place', 'DPU · Delivered at Place Unloaded', 'DDP · Delivered Duty Paid', 'FAS · Free Alongside Ship', 'FOB · Free on Board', 'CFR · Cost and Freight', 'CIF · Cost, Insurance and Freight'];
   const currentIncoterm = record?.incoterm ?? purchaseOrder?.incoterm ?? '';
   const incotermValues = [...new Set([...(currentIncoterm ? [currentIncoterm] : []), ...incotermNames])];
-  const fiscalPosition = record?.fiscalPosition || '';
-  const paymentMethod = record?.paymentMethod || 'Manual';
+  const fiscalPosition = record?.fiscalPosition || contact?.fiscalPosition || '';
+  const paymentMethod = record?.paymentMethod || (kind.startsWith('in_') ? contact?.vendorPaymentMethod : '') || 'Manual';
   const displayStatus = record ? invoiceDisplayStatus(record) : 'Draft';
   const due = record?.amountDue ?? record?.total ?? 0;
   const sourceDocument = purchaseOrder?.ref || record?.origin || editor.origin || salesOrder?.ref || '—';
@@ -10928,7 +11672,7 @@ function syncInvoiceOtherInfoForm() {
   if (originLabel) originLabel.textContent = kind.startsWith('in_') ? 'Bill Reference' : 'Source Document';
   const salesPersonControl = '<input name="salesperson" list="invoice-salesperson-options" value="' + escapeHtml(salesperson) + '"' + (editable ? '' : ' readonly') + '><datalist id="invoice-salesperson-options">' + salespersonNames.map((name) => '<option value="' + escapeHtml(name) + '"></option>').join('') + '</datalist>';
   const teamControl = select('salesTeam', teamNames, record?.salesTeam ?? salesOrder?.salesTeam ?? '', !editable, 'Select a team');
-  const bankControl = select('recipientBank', bankNames, record?.recipientBank || '', !editable, bankNames.length ? 'Select a bank account' : 'No bank account configured');
+  const bankControl = select('recipientBank', bankNames, record?.recipientBank || (kind.startsWith('in_') ? contact?.defaultRecipientBank : '') || '', !editable, bankNames.length ? 'Select a bank account' : 'No bank account configured');
   const fiscalControl = select('fiscalPosition', fiscalNames, fiscalPosition, !editable, 'None');
   const paymentControl = select('paymentMethod', paymentNames, paymentMethod, !editable, 'Select a payment method');
   const incotermControl = '<select name="incoterm"' + (!editable ? ' disabled' : '') + '>' + option('', 'Select an Incoterm', !currentIncoterm) + incotermValues.map((value) => option(value, value, value === currentIncoterm)).join('') + '</select>';
@@ -10981,20 +11725,22 @@ function renderCreditNoteDocumentForm(record, editor) {
   const status = record ? invoiceDisplayStatus(record) : "Draft";
   const partner = record?.partner || editor.partner || "";
   const date = record?.invoiceDate || inputLocalDate();
-  const termsValue = record?.paymentTerms || state.salesSettings.defaultPaymentTerms || "Due on receipt";
+  const linkedCustomerContact = accountingContactForPartner(partner, record?.contactId || editor.contactId);
+  const termsValue = record?.paymentTerms || linkedCustomerContact?.salesPaymentTerms || linkedCustomerContact?.paymentTerms || state.salesSettings.defaultPaymentTerms || "Due on receipt";
   const terms = [...new Set([termsValue, "Due on receipt", "Cash on delivery", "Credit · 7 days", "Credit · 15 days", "Credit · 30 days", ...(state.invoiceConfig.collections?.["invoice-payment-terms"] || []).map((term) => term.name)])];
-  const lines = record?.lines?.length ? record.lines.map((line, index) => line.type === "section" || line.type === "note" ? creditNoteSpecialLineMarkup(line.type, index).replace('placeholder="' + (line.type === "section" ? "Section title" : "Add a note") + '"', 'value="' + escapeHtml(line.description || "") + '" placeholder="' + (line.type === "section" ? "Section title" : "Add a note") + '"') : creditNoteInvoiceLineMarkup(line, index)).join("")
-    : editor.lines?.length ? editor.lines.map((line, index) => creditNoteInvoiceLineMarkup(line, index)).join("") : creditNoteInvoiceLineMarkup({}, 0);
+  const currentLines = editor.autosaveHasLines ? (editor.autosaveLines || []) : record?.lines?.length ? record.lines : editor.lines || [];
+  const lines = currentLines.length ? currentLines.map((line, index) => line.type === "section" || line.type === "note" ? creditNoteSpecialLineMarkup(line.type, index).replace('placeholder="' + (line.type === "section" ? "Section title" : "Add a note") + '"', 'value="' + escapeHtml(line.description || "") + '" placeholder="' + (line.type === "section" ? "Section title" : "Add a note") + '"') : creditNoteInvoiceLineMarkup(line, index)).join("") : editor.autosaveHasLines ? "" : creditNoteInvoiceLineMarkup({}, 0);
   const journal = accountingUsableJournals().find((item) => item.type === "sales");
   const journalOptions = accountingUsableJournals().filter((item) => item.type === "sales").map((item) => `<option value="${escapeHtml(item.name)}" ${item.name === (record?.journal || journal?.name) ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("");
   const original = record?.sourceId ? state.invoices.find((item) => item.id === Number(record.sourceId)) : editor.sourceId ? state.invoices.find((item) => item.id === Number(editor.sourceId)) : null;
   const deliveryAddress = record?.deliveryAddress || editor.deliveryAddress || (partner ? salesCustomerAddress(partner) : "") || "";
-  const carriedLines = record?.lines || editor.lines || [];
+  const carriedLines = editor.autosaveHasLines ? (editor.autosaveLines || []) : record?.lines || editor.lines || [];
   const taxExcluded = record?.taxExcluded ?? carriedLines.filter((line) => line.type !== "section" && line.type !== "note").reduce((sum, line) => sum + Number(line.subtotal || 0), 0);
   const taxAmount = record?.taxAmount ?? carriedLines.filter((line) => line.type !== "section" && line.type !== "note").reduce((sum, line) => sum + Number(line.taxAmount || 0), 0);
   const total = record?.total ?? taxExcluded + taxAmount;
-  const defaultJournalRows = record?.journalItems?.length
-    ? record.journalItems.map((line, index) => `<tr data-credit-journal-row data-journal-index="${index}"><td><button type="button" class="credit-note-account-link" data-credit-account-picker="journal" data-line-index="${index}">${escapeHtml(line.accountCode)} ${escapeHtml(accountingAccountName(line.accountCode))}</button><input type="hidden" data-credit-journal-account value="${escapeHtml(line.accountCode)}"></td><td><input data-credit-journal-label value="${escapeHtml(line.label || "")}" aria-label="Label"></td><td><input data-credit-journal-analytic value="${escapeHtml(line.analytic || "")}" aria-label="Analytic Distribution"></td><td><input data-credit-journal-debit type="number" min="0" step="0.01" value="${Number(line.debit || 0).toFixed(2)}" aria-label="Debit"></td><td><input data-credit-journal-credit type="number" min="0" step="0.01" value="${Number(line.credit || 0).toFixed(2)}" aria-label="Credit"></td><td><input data-credit-journal-tax-grid value="${escapeHtml(line.taxGrids || "")}" aria-label="Tax Grids"></td><td><button type="button" class="soft-icon-button credit-note-remove-line" data-action="remove-credit-journal-line" aria-label="Remove journal line"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15M9 7V4.5h6V7m-8.5 0 1 13h9l1-13M10 10.5v6m4-6v6"/></svg></button></td></tr>`).join("")
+  const savedJournalItems = editor.autosaveJournalItems || record?.journalItems || [];
+  const defaultJournalRows = savedJournalItems.length
+    ? savedJournalItems.map((line, index) => `<tr data-credit-journal-row data-journal-index="${index}"><td><button type="button" class="credit-note-account-link" data-credit-account-picker="journal" data-line-index="${index}">${escapeHtml(line.accountCode)} ${escapeHtml(accountingAccountName(line.accountCode))}</button><input type="hidden" data-credit-journal-account value="${escapeHtml(line.accountCode)}"></td><td><input data-credit-journal-label value="${escapeHtml(line.label || "")}" aria-label="Label"></td><td><input data-credit-journal-analytic value="${escapeHtml(line.analytic || "")}" aria-label="Analytic Distribution"></td><td><input data-credit-journal-debit type="number" min="0" step="0.01" value="${Number(line.debit || 0).toFixed(2)}" aria-label="Debit"></td><td><input data-credit-journal-credit type="number" min="0" step="0.01" value="${Number(line.credit || 0).toFixed(2)}" aria-label="Credit"></td><td><input data-credit-journal-tax-grid value="${escapeHtml(line.taxGrids || "")}" aria-label="Tax Grids"></td><td><button type="button" class="soft-icon-button credit-note-remove-line" data-action="remove-credit-journal-line" aria-label="Remove journal line"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15M9 7V4.5h6V7m-8.5 0 1 13h9l1-13M10 10.5v6m4-6v6"/></svg></button></td></tr>`).join("")
     : creditNoteJournalRowsMarkup(record?.lines || editor.lines || [], taxAmount, total, partner, ref);
   const saveDraft = editable ? `<button class="credit-note-cloud-save" type="button" data-save-invoice="Draft" aria-label="Save" title="Save"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 18.5h10a4 4 0 0 0 .4-8 6 6 0 0 0-11.3-1.3A4.4 4.4 0 0 0 7.5 18.5Z"/><path d="m8.5 12.5 3.5 3.5 3.5-3.5M12 16v-7"/></svg></button>` : "";
   const actionButtons = editable ? `<button class="action-button" type="button" data-save-invoice="Posted">Confirm</button><button class="action-button secondary" type="button" data-invoice-editor-action="discard">Cancel</button>` : `<button class="action-button secondary" type="button" data-action="print-invoice">Print</button>`;
@@ -11011,11 +11757,14 @@ function renderInvoiceDocumentForm() {
   const purchaseOrder = purchaseOrders.find((order) => Number(order.id) === purchaseOrderId) || null;
   const editable = !record || record.status === "Draft";
   const date = record?.invoiceDate || inputLocalDate();
-  const defaultTerms = record?.paymentTerms || state.salesSettings.defaultPaymentTerms || "Due on receipt";
+  const defaultPartner = record?.partner || editor.partner || "";
+  const linkedPartnerContact = accountingContactForPartner(defaultPartner, record?.contactId || editor.contactId);
+  const defaultTerms = record?.paymentTerms || (kind.startsWith("in_") ? linkedPartnerContact?.purchasePaymentTerms || linkedPartnerContact?.paymentTerms || "Immediate" : linkedPartnerContact?.salesPaymentTerms || linkedPartnerContact?.paymentTerms || state.salesSettings.defaultPaymentTerms || "Due on receipt");
   const terms = [...new Set([defaultTerms, "Cash on delivery", "Credit · 7 days", "Credit · 15 days", "Credit · 30 days", ...(state.invoiceConfig.collections?.["invoice-payment-terms"] || []).map((term) => term.name)])];
   const partners = kind.startsWith("in_") ? vendors.map((vendor) => vendor.name) : state.salesCustomers.map((customer) => customer.name);
   const ref = record?.ref || nextInvoiceReference(kind);
-  const lines = record?.lines?.length ? record.lines.map((line) => invoiceLineMarkup(line, kind)).join("") : (editor.lines?.length ? editor.lines.map((line) => invoiceLineMarkup(line, kind)).join("") : invoiceLineMarkup({}, kind));
+  const currentLines = editor.autosaveHasLines ? (editor.autosaveLines || []) : record?.lines?.length ? record.lines : editor.lines || [];
+  const lines = currentLines.length ? currentLines.map((line) => invoiceLineMarkup(line, kind)).join("") : editor.autosaveHasLines ? "" : invoiceLineMarkup({}, kind);
   const taxExcluded = record?.taxExcluded ?? 0;
   const taxAmount = record?.taxAmount ?? 0;
   const total = record?.total ?? 0;
@@ -11039,7 +11788,53 @@ function renderInvoiceDocumentForm() {
   return `<section class="sales-document-page erp-finance-record-page erp-odoo-invoice-page"><div class="sales-document-toolbar"><div class="sales-document-title"><button type="button" class="action-button" data-invoice-editor-action="discard">${record ? pageLabels[state.page] || "Invoices" : "New"}</button><div><button type="button" class="sales-breadcrumb" data-invoice-editor-action="discard">${escapeHtml(pageLabels[state.page] || "Accounting")}</button><h1>${escapeHtml(record?.ref || title)}</h1><small>${escapeHtml(invoiceLabel(kind))}${record?.partner ? ` · ${escapeHtml(record.partner)}` : ""}</small></div></div><div class="sales-document-toolbar-right">${purchaseOrderLink}<button type="button" class="credit-note-smart-link invoice-journal-smart-link" data-invoice-tab="journal-items"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h14M2.5 6h.01M2.5 12h.01M2.5 18h.01"/></svg>Journal Items</button><button class="soft-icon-button" type="button" data-action="print-invoice" aria-label="Print or download">⇩</button><button class="soft-icon-button" type="button" data-invoice-editor-action="discard" aria-label="Close">×</button></div></div><div class="sales-document-actionbar"><div class="sales-document-buttons">${actions}</div>${statusbar}</div><div class="erp-finance-form-layout"><main><form id="invoice-form" data-id="${record?.id || ""}" data-kind="${kind}" data-source="${record?.sourceId || editor.sourceId || ""}" data-purchase-order="${purchaseOrder?.id || ""}" data-return-page="${escapeHtml(editor.returnPage || state.page)}"><article class="sales-document-card"><header class="sales-document-heading"><div><span class="settings-eyebrow">${kind.startsWith("in_") ? "SUPPLIER BILL" : "CUSTOMER INVOICE"}</span><h2>${record ? escapeHtml(ref) : "Draft"}</h2><small class="sales-document-ref">${escapeHtml(ref)}</small></div><span class="sales-currency-tag">Bangladesh · BDT ৳</span></header><section class="sales-document-fields"><div class="sales-field-main"><div class="field sales-partner-field"><label>${kind.startsWith("in_") ? "Vendor" : "Customer"}</label><input name="partner" list="invoice-partner-options" value="${escapeHtml(record?.partner || editor.partner || "")}" required ${readOnly} placeholder="Search a name or Tax ID..."><datalist id="invoice-partner-options">${partners.map((name) => `<option value="${escapeHtml(name)}">`).join("")}</datalist><small>${kind.startsWith("in_") ? "Supplier account · shared with Purchase" : "Customer / dealer account · shared with Sales"}</small></div><div class="field invoice-reference-field"><label>${kind.startsWith("in_") ? "Bill Reference" : "Customer Reference"}</label><input name="origin" value="${escapeHtml(record?.origin || editor.origin || "")}" ${readOnly} placeholder="Customer or supplier reference"></div><div class="field invoice-delivery-field"><label>Delivery Address</label><input name="deliveryAddress" value="${escapeHtml(record?.deliveryAddress || editor.deliveryAddress || (record?.partner || editor.partner ? salesCustomerAddress(record?.partner || editor.partner) : ""))}" ${readOnly} placeholder="Delivery address"></div></div><div class="sales-field-side"><div class="field"><label>${kind.startsWith("in_") ? "Bill Date" : "Invoice Date"}</label><input name="invoiceDate" type="date" value="${escapeHtml(date)}" required ${readOnly}></div><div class="invoice-due-terms-row"><div class="field"><label>Due Date</label><input name="dueDate" type="date" value="${escapeHtml(record?.dueDate || invoiceDueDate(date, defaultTerms))}" ${readOnly}></div><span class="invoice-or">or</span><div class="field"><label>Payment Terms</label><select name="paymentTerms" ${readOnly}>${terms.map((term) => `<option ${term === defaultTerms ? "selected" : ""}>${escapeHtml(term)}</option>`).join("")}</select></div></div><div class="field"><label>Journal</label><input value="${escapeHtml(journal?.name || "No journal configured")}" disabled></div><div class="field"><label>Currency</label><input value="${escapeHtml(record?.currency || "BDT")}" disabled></div></div></section><nav class="sales-document-tabs erp-finance-tabs" aria-label="Accounting document details"><button type="button" data-invoice-tab="invoice-lines" class="${state.invoiceTab === "invoice-lines" ? "is-active" : ""}">Invoice Lines</button><button type="button" data-invoice-tab="journal-items" class="${state.invoiceTab === "journal-items" ? "is-active" : ""}">Journal Items</button><button type="button" data-invoice-tab="other-info" class="${state.invoiceTab === "other-info" ? "is-active" : ""}">Other Info</button></nav><section class="sales-tab-panel ${state.invoiceTab === "invoice-lines" ? "is-active" : ""}" data-invoice-panel="invoice-lines"><div class="sales-lines-toolbar"><div><strong>Products</strong><small>Choose a SKU and bill in pieces, packets, cartons, bags or kg.</small></div><div class="sales-tax-switch"><button type="button" class="is-active" disabled>Tax Excl.</button><button type="button" disabled>Tax Incl.</button></div></div><div class="sale-lines-scroll"><table class="order-lines invoice-entry-lines"><thead><tr><th>Product</th><th>Account</th><th>Analytic Distribution</th><th>Quantity</th><th>Unit</th><th>Price</th><th>Taxes</th><th class="money-cell">Amount</th><th></th></tr></thead><tbody id="invoice-line-items">${lines}</tbody></table></div>${editable ? `<div class="sales-line-actions"><button type="button" data-action="add-invoice-line">Add a line</button><button type="button" data-action="invoice-catalog">Catalog</button></div>` : ""}${state.invoiceConfig.taxes?.length ? "" : `<div class="sales-tax-note compact"><strong>Tax mapping is not configured</strong><p>Tax remains 0% until verified tax rules are added. Confirm Bangladesh VAT treatment before posting.</p></div>`}<div class="invoice-totals-edit"><span>Untaxed Amount<strong id="invoice-subtotal">${salesCurrency(taxExcluded)}</strong></span><span>Tax<strong id="invoice-tax-total">${salesCurrency(taxAmount)}</strong></span><span>Total<strong id="invoice-total">${salesCurrency(total)}</strong></span><span>Amount Due<strong>${salesCurrency(due)}</strong></span></div></section><section class="sales-tab-panel ${state.invoiceTab === "journal-items" ? "is-active" : ""}" data-invoice-panel="journal-items"><p class="erp-accounting-explainer">These balanced journal lines are generated from this document when it is posted.</p><div class="sale-lines-scroll"><table class="order-lines erp-journal-preview"><thead><tr><th>Account</th><th>Partner</th><th>Label</th><th class="money-cell">Debit · BDT</th><th class="money-cell">Credit · BDT</th></tr></thead><tbody id="invoice-journal-preview">${initialJournalRows}</tbody></table></div></section><section class="sales-tab-panel ${state.invoiceTab === "other-info" ? "is-active" : ""}" data-invoice-panel="other-info"><div class="sales-other-info-grid"><div class="field"><label>Journal</label><input value="${escapeHtml(journal?.name || "No journal configured")}" disabled></div><div class="field"><label>Currency</label><input value="${escapeHtml(record?.currency || "BDT")}" disabled></div><div class="field"><label>Source Document</label><input value="${escapeHtml(purchaseOrder?.ref || record?.origin || editor.origin || "—")}" readonly></div><div class="field"><label>Linked Source</label><input value="${escapeHtml(purchaseOrder?.ref || sourceInvoice?.ref || (record?.salesOrderId ? state.salesOrders.find((order) => order.id === record.salesOrderId)?.ref : "—") || "—")}" readonly></div><div class="field"><label>Payment Status</label><input value="${escapeHtml(displayStatus)} · ${salesCurrency(due)} due" readonly></div><div class="field"><label>Accounting Date</label><input value="${escapeHtml(record?.postedDate || date)}" readonly></div></div></section><footer class="sales-document-footer"><div class="sales-document-note">Posting adds this document to the shared Accounts Receivable/Payable and sales/purchase ledger. Values stay in this browser prototype.</div><div class="sales-document-buttons">${actions}</div></footer></article></form></main><aside class="erp-finance-chatter"><div class="erp-chatter-actions"><button type="button" class="action-button">Send message</button><button type="button" class="action-button secondary">Log note</button><button type="button" class="action-button secondary">Activity</button></div><div class="erp-chatter-entry"><span>${escapeHtml(initials(state.userProfile.name))}</span><div><strong>${escapeHtml(state.userProfile.name)}</strong><p>${record ? `${escapeHtml(displayStatus)} · ${escapeHtml(record.ref)}` : "Creating a new record..."}</p></div></div><p class="erp-chatter-note">Document history and partner communications appear here.</p></aside></div></section>`;
 }
 
+function clearInvoiceEditorAutosave() {
+  try { sessionStorage.removeItem(invoiceEditorAutosaveKey); }
+  catch { /* Keep the editor usable when tab storage is unavailable. */ }
+}
+
+function persistInvoiceEditorAutosave(form = document.querySelector("#invoice-form")) {
+  if (!state.invoiceEditor || !form || !form.querySelector("[data-save-invoice]")) return false;
+  const fields = {};
+  [...form.elements].filter((control) => control.name).forEach((control) => {
+    const values = fields[control.name] || (fields[control.name] = []);
+    values.push({ value: String(control.value ?? ""), ...(typeof control.checked === "boolean" ? { checked: control.checked } : {}) });
+  });
+  state.invoiceEditor.kind = form.dataset.kind || state.invoiceEditor.kind || invoiceKindForPage();
+  state.invoiceEditor.autosaveFields = fields;
+  state.invoiceEditor.autosaveLines = readInvoiceEditorLines(form);
+  state.invoiceEditor.autosaveHasLines = true;
+  state.invoiceEditor.autosaveJournalItems = form.dataset.kind === "out_refund" ? readCreditNoteJournalItems(form) : [];
+  try {
+    sessionStorage.setItem(invoiceEditorAutosaveKey, JSON.stringify({
+      page: state.page, module: state.module, editor: state.invoiceEditor, invoiceTab: state.invoiceTab,
+    }));
+    return true;
+  } catch { return false; }
+}
+
+function restoreInvoiceEditorAutosave() {
+  const form = document.querySelector("#invoice-form");
+  const fields = state.invoiceEditor?.autosaveFields;
+  if (!form || !fields) return;
+  Object.entries(fields).forEach(([name, savedControls]) => {
+    const controls = [...form.elements].filter((control) => control.name === name);
+    (Array.isArray(savedControls) ? savedControls : [{ value: savedControls }]).forEach((saved, index) => {
+      const control = controls[index];
+      if (!control) return;
+      const value = String(saved?.value ?? "");
+      if (control.tagName === "SELECT" && value && ![...control.options].some((option) => option.value === value)) {
+        control.add(new Option(value, value));
+      }
+      if (typeof saved?.checked === "boolean") control.checked = saved.checked;
+      else control.value = value;
+    });
+  });
+  updateInvoiceTotal({ updateJournal: form.dataset.kind !== "out_refund" });
+}
+
 function openInvoiceModal(invoiceId = null, options = {}) {
+  clearInvoiceEditorAutosave();
   const record = invoiceId ? state.invoices.find((invoice) => invoice.id === Number(invoiceId)) : null;
   state.invoicePaymentEditor = null;
   state.invoiceEditor = record ? { id: record.id, contactId: record.contactId || null, returnPage: state.page } : {
@@ -11048,6 +11843,7 @@ function openInvoiceModal(invoiceId = null, options = {}) {
   state.invoiceTab = "invoice-lines";
   render();
   if (!record) updateInvoiceTotal();
+  persistInvoiceEditorAutosave();
 }
 
 function createVendorBillFromPurchaseOrder(orderId) {
@@ -11064,7 +11860,7 @@ function createVendorBillFromPurchaseOrder(orderId) {
   }
   const lines = (order.lines || []).filter((line) => !line.type).map((line) => {
     const product = salesProducts.find((item) => item.sku === line.sku || item.name === line.product);
-    return { product: product?.name || line.product, sku: product?.sku || line.sku, description: product?.name || line.product, uom: line.uom || product?.stockUom || "Piece", qty: Number(line.qty) || 0, price: Number(line.price) || 0, taxId: line.taxId || product?.purchaseTaxId || null, stockFactor: product ? purchaseUnitFactor(product, line.uom || product.stockUom) : null };
+    return { product: product?.name || line.product, sku: product?.sku || line.sku, description: product?.name || line.product, uom: line.uom || product?.stockUom || "Piece", qty: Number(line.qty) || 0, price: Number(line.price) || 0, discount: Number(line.discount || 0), taxId: line.taxId || product?.purchaseTaxId || null, stockFactor: product ? purchaseUnitFactor(product, line.uom || product.stockUom) : null };
   });
   if (!lines.length) { showToast("Add purchase order product lines before creating a vendor bill."); return; }
   setPage("invoice-vendor-bills");
@@ -11076,6 +11872,7 @@ function openPaymentModal(invoiceId = null) {
   if (invoice && !["Posted", "Partial", "Overdue"].includes(invoice.status)) { showToast("Post this invoice or bill before registering a payment."); return; }
   const vendor = invoice ? invoice.kind.startsWith("in_") : ["invoice-vendor-payments", "accounting-vendor-payments"].includes(state.page);
   const returnPage = state.page.startsWith("accounting-") ? state.page : "";
+  clearInvoiceEditorAutosave();
   state.invoiceEditor = null;
   state.invoicePaymentEditor = { invoiceId: invoice?.id || null, vendor, returnPage };
   render();
@@ -11085,12 +11882,24 @@ function renderInvoicePaymentPage() {
   const editor = state.invoicePaymentEditor || {};
   const invoice = state.invoices.find((row) => row.id === Number(editor.invoiceId)) || null;
   const vendor = invoice ? invoice.kind.startsWith("in_") : Boolean(editor.vendor);
+  const paymentContact = accountingContactForPartner(invoice?.partner, invoice?.contactId || editor.contactId);
   const candidates = state.invoices.filter((row) => row.kind.startsWith(vendor ? "in_" : "out_") && Number(row.amountDue) > 0 && ["Posted", "Partial", "Overdue"].includes(row.status));
   const paymentJournals = accountingUsableJournals().filter((journal) => ["cash", "bank", "card"].includes(journal.type));
   const options = candidates.map((row) => `<option value="${row.id}" data-due="${row.amountDue}" ${invoice?.id === row.id ? "selected" : ""}>${escapeHtml(row.ref)} · ${escapeHtml(row.partner)} · Due ${salesCurrency(row.amountDue)}</option>`).join("");
   const choice = invoice ? `<input name="invoiceId" type="hidden" value="${invoice.id}"><div class="field wide"><label>${vendor ? "Vendor Bill" : "Customer Invoice"}</label><input value="${escapeHtml(invoice.ref)} · ${escapeHtml(invoice.partner)} · Due ${salesCurrency(invoice.amountDue)}" readonly></div>` : `<div class="field wide"><label>Open ${vendor ? "Vendor Bill" : "Customer Invoice"}</label><select name="invoiceId" required><option value="">Select an open document</option>${options}</select></div>`;
+  const paymentMethodOptions = [...new Set(["Manual", "Bank Transfer", "Cash", "Cheque", "Mobile Financial Service", ...(state.invoiceConfig.collections?.["invoice-payment-methods"] || []).map((item) => typeof item === "string" ? item : item?.name), paymentContact?.vendorPaymentMethod].filter(Boolean))];
+  const bankOptions = (Array.isArray(paymentContact?.bankAccounts) ? paymentContact.bankAccounts : []).map((bank) => {
+    const bankName = String(bank?.bank || bank?.name || "Bank account").trim();
+    const account = String(bank?.accountNumber || "").replace(/\s+/g, "");
+    const holder = String(bank?.accountHolder || "").trim();
+    return [bankName, account ? `•••• ${account.slice(-4)}` : "", holder].filter(Boolean).join(" · ");
+  }).filter(Boolean);
+  const selectedBank = paymentContact?.defaultRecipientBank || invoice?.recipientBank || "";
+  const selectedMethod = vendor ? paymentContact?.vendorPaymentMethod || "Manual" : "Manual";
+  const preferredJournalType = /bank|cheque|mobile|bKash|Nagad/i.test(selectedMethod) ? "bank" : "cash";
+  const selectedJournal = paymentJournals.find((journal) => journal.type === preferredJournalType) || paymentJournals[0];
   const title = vendor ? "Register Vendor Payment" : "Register Customer Receipt";
-  return `<section class="sales-document-page erp-finance-record-page"><div class="sales-document-toolbar"><div class="sales-document-title"><button type="button" class="action-button" data-invoice-editor-action="discard">${escapeHtml(pageLabels[state.page] || "Accounting")}</button><div><button type="button" class="sales-breadcrumb" data-invoice-editor-action="discard">${escapeHtml(pageLabels[state.page] || "Accounting")}</button><h1>${title}</h1><small>Payment · BDT</small></div></div><button type="button" class="soft-icon-button" data-invoice-editor-action="discard" aria-label="Close">×</button></div><div class="sales-document-actionbar"><div class="sales-document-buttons"><button type="submit" form="invoice-payment-form" class="action-button">Register Payment</button><button type="button" class="action-button secondary" data-invoice-editor-action="discard">Discard</button></div><div class="sales-statusbar invoice-statusbar"><span class="is-current">Draft</span><span>Posted</span></div></div><div class="erp-finance-form-layout"><main><form id="invoice-payment-form" data-vendor="${vendor}" data-return-page="${escapeHtml(editor.returnPage || state.page)}"><article class="sales-document-card"><header class="sales-document-heading"><div><span class="settings-eyebrow">${vendor ? "SUPPLIER PAYMENT" : "CUSTOMER RECEIPT"}</span><h2>${title}</h2></div><span class="sales-currency-tag">Bangladesh · BDT ৳</span></header><section class="sales-document-fields"><div class="sales-field-main"><div class="sales-other-info-grid">${choice}<div class="field"><label>Payment Date</label><input name="date" type="date" value="${inputLocalDate()}" required></div><div class="field"><label>Amount · BDT</label><input name="amount" type="number" min="0.01" step="0.01" value="${invoice ? Number(invoice.amountDue).toFixed(2) : ""}" required></div><div class="field"><label>Journal</label><select name="journal">${paymentJournals.map((journal) => `<option value="${escapeHtml(journal.name)}" ${journal.type === "cash" ? "selected" : ""}>${escapeHtml(journal.name)}</option>`).join("")}</select></div><div class="field"><label>Payment Reference</label><input name="reference" placeholder="Receipt / bank transaction reference"></div></div></div><div class="sales-field-side"><div class="erp-payment-summary"><span>Open balance</span><strong>${salesCurrency(invoice?.amountDue || 0)}</strong><span>Payment reduces ${vendor ? "Accounts Payable" : "Accounts Receivable"}.</span></div></div></section><section class="sales-tab-panel is-active"><p class="erp-accounting-explainer">Registering the payment updates the linked invoice balance and creates a payment line in Accounting. Use Reconcile after matching the bank or cash statement.</p></section><footer class="sales-document-footer"><div class="sales-document-note">The invoice, partner balance and payment journal share the same local accounting records.</div><div class="sales-document-buttons"><button type="button" class="action-button secondary" data-invoice-editor-action="discard">Discard</button><button type="submit" class="action-button">Register Payment</button></div></footer></article></form></main><aside class="erp-finance-chatter"><div class="erp-chatter-actions"><button type="button" class="action-button">Send message</button><button type="button" class="action-button secondary">Log note</button><button type="button" class="action-button secondary">Activity</button></div><div class="erp-chatter-entry"><span>${escapeHtml(initials(state.userProfile.name))}</span><div><strong>${escapeHtml(state.userProfile.name)}</strong><p>Creating a new payment...</p></div></div></aside></div></section>`;
+  return `<section class="sales-document-page erp-finance-record-page"><div class="sales-document-toolbar"><div class="sales-document-title"><button type="button" class="action-button" data-invoice-editor-action="discard">${escapeHtml(pageLabels[state.page] || "Accounting")}</button><div><button type="button" class="sales-breadcrumb" data-invoice-editor-action="discard">${escapeHtml(pageLabels[state.page] || "Accounting")}</button><h1>${title}</h1><small>Payment · BDT</small></div></div><button type="button" class="soft-icon-button" data-invoice-editor-action="discard" aria-label="Close">×</button></div><div class="sales-document-actionbar"><div class="sales-document-buttons"><button type="submit" form="invoice-payment-form" class="action-button">Register Payment</button><button type="button" class="action-button secondary" data-invoice-editor-action="discard">Discard</button></div><div class="sales-statusbar invoice-statusbar"><span class="is-current">Draft</span><span>Posted</span></div></div><div class="erp-finance-form-layout"><main><form id="invoice-payment-form" data-vendor="${vendor}" data-return-page="${escapeHtml(editor.returnPage || state.page)}"><article class="sales-document-card"><header class="sales-document-heading"><div><span class="settings-eyebrow">${vendor ? "SUPPLIER PAYMENT" : "CUSTOMER RECEIPT"}</span><h2>${title}</h2></div><span class="sales-currency-tag">Bangladesh · BDT ৳</span></header><section class="sales-document-fields"><div class="sales-field-main"><div class="sales-other-info-grid">${choice}<div class="field"><label>Payment Date</label><input name="date" type="date" value="${inputLocalDate()}" required></div><div class="field"><label>Amount · BDT</label><input name="amount" type="number" min="0.01" step="0.01" value="${invoice ? Number(invoice.amountDue).toFixed(2) : ""}" required></div><div class="field"><label>Journal</label><select name="journal">${paymentJournals.map((journal) => `<option value="${escapeHtml(journal.name)}" ${journal.name === selectedJournal?.name ? "selected" : ""}>${escapeHtml(journal.name)}</option>`).join("")}</select></div><div class="field"><label>${vendor ? "Payment Method" : "Receipt Method"}</label><select name="method">${paymentMethodOptions.map((method) => `<option value="${escapeHtml(method)}" ${method === selectedMethod ? "selected" : ""}>${escapeHtml(method)}</option>`).join("")}</select></div>${vendor ? `<div class="field"><label>Recipient Bank</label><select name="recipientBank"><option value="">${bankOptions.length ? "Select a bank account" : "No bank account configured"}</option>${bankOptions.map((bank) => `<option value="${escapeHtml(bank)}" ${bank === selectedBank ? "selected" : ""}>${escapeHtml(bank)}</option>`).join("")}</select></div>` : ""}<div class="field"><label>Payment Reference</label><input name="reference" placeholder="Receipt / bank transaction reference"></div></div></div><div class="sales-field-side"><div class="erp-payment-summary"><span>Open balance</span><strong>${salesCurrency(invoice?.amountDue || 0)}</strong><span>Payment reduces ${vendor ? "Accounts Payable" : "Accounts Receivable"}.</span></div></div></section><section class="sales-tab-panel is-active"><p class="erp-accounting-explainer">Registering the payment updates the linked invoice balance and creates a payment line in Accounting. Use Reconcile after matching the bank or cash statement.</p></section><footer class="sales-document-footer"><div class="sales-document-note">The invoice, partner balance and payment journal share the same local accounting records.</div><div class="sales-document-buttons"><button type="button" class="action-button secondary" data-invoice-editor-action="discard">Discard</button><button type="submit" class="action-button">Register Payment</button></div></footer></article></form></main><aside class="erp-finance-chatter"><div class="erp-chatter-actions"><button type="button" class="action-button">Send message</button><button type="button" class="action-button secondary">Log note</button><button type="button" class="action-button secondary">Activity</button></div><div class="erp-chatter-entry"><span>${escapeHtml(initials(state.userProfile.name))}</span><div><strong>${escapeHtml(state.userProfile.name)}</strong><p>Creating a new payment...</p></div></div></aside></div></section>`;
 }
 
 function openInvoiceExpenseModal() {
@@ -11123,13 +11932,55 @@ function updateOrderTotal() {
   form.querySelectorAll(".purchase-line").forEach((line) => {
     const qty = Number(line.querySelector("[data-line-qty]")?.value || 0);
     const price = Number(line.querySelector("[data-line-price]")?.value || 0);
+    const discount = Math.max(0, Math.min(100, Number(line.querySelector("[data-line-discount]")?.value || 0)));
     const taxId = Number(line.querySelector("[data-line-tax]")?.value || 0);
     const tax = (state.invoiceConfig.taxes || []).find((item) => item.id === taxId && item.active);
-    const amounts = calculateInvoiceLineAmounts(qty, price, tax);
+    const netPrice = price * (1 - discount / 100);
+    const amounts = calculateInvoiceLineAmounts(qty, netPrice, tax);
     subtotal += amounts.subtotal;
     taxTotal += amounts.taxAmount;
     const cell = line.querySelector(".line-subtotal");
     if (cell) cell.textContent = salesCurrency(state.purchaseTaxMode === "included" ? amounts.subtotal + amounts.taxAmount : amounts.subtotal);
+    const product = salesProducts.find((item) => Number(item.id) === Number(line.querySelector("[data-purchase-product]")?.value));
+    const variant = line.querySelector(".sale-product-variant-cell");
+    const unitCost = line.querySelector(".sale-unit-cost-cell");
+    const marginCell = line.querySelector(".sale-margin-cell");
+    const marginPercent = line.querySelector(".sale-margin-percent-cell");
+    const taxExcluded = line.querySelector(".sale-tax-excluded-cell");
+    const taxIncluded = line.querySelector(".sale-tax-included-cell");
+    const conversion = line.querySelector("[data-purchase-conversion-preview]");
+    const stockButton = line.querySelector("[data-sales-stock-availability]");
+    if (product) {
+      if (variant) variant.textContent = product.variantLabel || product.variant || product.model || product.productClass || "—";
+      if (unitCost) unitCost.textContent = salesCurrency(Number(product.cost || 0));
+      const margin = netPrice - Number(product.cost || 0);
+      if (marginCell) marginCell.textContent = salesCurrency(margin);
+      if (marginPercent) marginPercent.textContent = amounts.subtotal > 0 ? `${(margin / amounts.subtotal * 100).toFixed(2)}%` : "0.00%";
+      if (taxExcluded) taxExcluded.textContent = salesCurrency(amounts.subtotal);
+      if (taxIncluded) taxIncluded.textContent = salesCurrency(amounts.subtotal + amounts.taxAmount);
+      if (conversion) conversion.textContent = productUnitConversionPreview(product, qty, line.querySelector("[data-line-uom]")?.value || product.stockUom);
+      if (stockButton) {
+        const forecast = salesStockForecastData(product);
+        stockButton.dataset.salesStockAvailability = String(product.id);
+        stockButton.setAttribute("aria-label", `Availability for ${product.name}`);
+        stockButton.classList.toggle("is-negative", forecast.forecasted < 0);
+        stockButton.classList.toggle("is-positive", forecast.forecasted >= 0);
+        stockButton.disabled = false;
+      }
+    } else {
+      if (variant) variant.textContent = "—";
+      if (unitCost) unitCost.textContent = salesCurrency(0);
+      if (marginCell) marginCell.textContent = salesCurrency(0);
+      if (marginPercent) marginPercent.textContent = "0.00%";
+      if (taxExcluded) taxExcluded.textContent = salesCurrency(0);
+      if (taxIncluded) taxIncluded.textContent = salesCurrency(0);
+      if (conversion) conversion.textContent = "";
+      if (stockButton) {
+        stockButton.dataset.salesStockAvailability = "";
+        stockButton.setAttribute("aria-label", "Select a product to view availability");
+        stockButton.disabled = true;
+      }
+    }
   });
   const total = subtotal + taxTotal;
   const subtotalNode = form.querySelector("#order-subtotal");
@@ -11159,10 +12010,11 @@ function savePurchaseOrder(action) {
     const product = salesProducts.find((item) => item.id === Number(row.querySelector("[data-purchase-product]")?.value));
     const qty = Number(row.querySelector("[data-line-qty]")?.value || 0);
     const price = Number(row.querySelector("[data-line-price]")?.value || 0);
+    const discount = Math.max(0, Math.min(100, Number(row.querySelector("[data-line-discount]")?.value || 0)));
     const taxId = Number(row.querySelector("[data-line-tax]")?.value || 0) || null;
     const tax = (state.invoiceConfig.taxes || []).find((item) => item.id === taxId && item.active);
-    const amounts = calculateInvoiceLineAmounts(qty, price, tax);
-    return { product: product?.name || "", sku: product?.sku || "", uom: row.querySelector("[data-line-uom]")?.value || product?.stockUom || "Piece", qty, price, taxId, taxAmount: amounts.taxAmount, amount: amounts.subtotal + amounts.taxAmount };
+    const amounts = calculateInvoiceLineAmounts(qty, price * (1 - discount / 100), tax);
+    return { product: product?.name || "", sku: product?.sku || "", uom: row.querySelector("[data-line-uom]")?.value || product?.stockUom || "Piece", qty, price, discount, taxId, taxAmount: amounts.taxAmount, amount: amounts.subtotal + amounts.taxAmount };
   }).filter((line) => line.type ? line.description : line.product && line.qty > 0);
   const productLines = lines.filter((line) => !line.type);
   if (["send", "confirm"].includes(action) && !productLines.length) { showToast("Add at least one product before sending or confirming this order."); document.querySelector("[data-purchase-product]")?.focus(); return; }
@@ -12970,7 +13822,7 @@ function handleClick(event) {
     if (action === "view-all-activities") { setPage("activities"); return; }
     if (action === "user-profile-menu") { toggleUserProfilePopover(pageLink); return; }
     if (action === "configure-columns") { toggleColumnChooser(pageLink); return; }
-    if (action === "reset-columns") { const key = columnVisibilityKey(); const defaults = defaultColumnVisibility(key); if (defaults) state.columnVisibility[key] = defaults; else delete state.columnVisibility[key]; localStorage.setItem("odooColumnVisibility", JSON.stringify(state.columnVisibility)); document.querySelector(".column-popover")?.remove(); applySavedColumnVisibility(); showToast("List columns restored to the default view."); return; }
+    if (action === "reset-columns") { const key = columnVisibilityKey(); const defaults = defaultColumnVisibility(key); if (defaults) state.columnVisibility[key] = defaults; else delete state.columnVisibility[key]; localStorage.setItem("odooColumnVisibility", JSON.stringify(state.columnVisibility)); document.querySelector(".column-popover")?.remove(); applySavedColumnVisibility(); showToast(key === "sales-order-lines" ? "Sales line columns restored to the default view." : key === "purchase-order-lines" ? "Purchase line columns restored to the default view." : "List columns restored to the default view."); return; }
     if (action === "add-custom-column") { if (state.page === "inventory-stock") openInventoryStockCustomFieldModal(); else openActivityCustomFieldModal(); return; }
     if (action === "go-purchase") { setPage("rfq"); return; }
     if (action === "go-sales") { setPage("sales-quotations"); return; }
@@ -13022,7 +13874,7 @@ function handleClick(event) {
     }
     if (action === "go-settings") { setPage("settings"); return; }
     if (action === "new-record") {
-      if (state.module === "contacts") { openPartnerContactForm(state.contactListTab === "suppliers" ? "supplier" : state.contactListTab === "dealers" ? "dealer" : "contact"); return; }
+      if (state.module === "contacts") { const contactKind = { customers: "customer", suppliers: "supplier", dealers: "dealer", "non-registered-dealers": "non-registered-dealer" }[state.contactListTab] || "contact"; openPartnerContactForm(contactKind); return; }
       if (state.module === "accounting") {
         if (state.page === "accounting-chart-of-accounts") openAccountingAccountModal();
         else if (state.page === "accounting-journals") openAccountingJournalModal();
@@ -13100,7 +13952,7 @@ function handleClick(event) {
       showToast(`${records.length} product${records.length === 1 ? "" : "s"} marked inactive. Their linked history is kept.`);
       return;
     }
-    if (action === "add-sale-section" || action === "add-sale-note") { document.querySelector("#sale-line-items")?.insertAdjacentHTML("beforeend", saleLineMarkup({ type: action === "add-sale-section" ? "section" : "note" }, false, currentSalesProductFlow(), nextSalesLineNumber())); renumberSalesLines(); return; }
+    if (action === "add-sale-section" || action === "add-sale-note") { document.querySelector("#sale-line-items")?.insertAdjacentHTML("beforeend", saleLineMarkup({ type: action === "add-sale-section" ? "section" : "note" }, false, currentSalesProductFlow(), nextSalesLineNumber())); renumberSalesLines(); applySavedColumnVisibility(); return; }
     if (action === "sales-catalog") { openSharedProductCatalog("sales", { returnFocusTo: event.target.closest('[data-action="sales-catalog"]') }); return; }
     if (action === "invoice-catalog") { openSharedProductCatalog("invoice"); return; }
     if (action === "sales-preview") { openSalesQuotationPreview(); return; }
@@ -13123,9 +13975,9 @@ function handleClick(event) {
     if (action === "remove-credit-journal-line") { pageLink.closest("tr")?.remove(); return; }
     if (action === "remove-invoice-line") { pageLink.closest("tr")?.remove(); updateInvoiceTotal(); return; }
     if (action === "print-invoice") { window.print(); return; }
-    if (action === "add-sale-line") { document.querySelector("#sale-line-items")?.insertAdjacentHTML("beforeend", saleLineMarkup({}, false, currentSalesProductFlow(), nextSalesLineNumber())); renumberSalesLines(); updateSaleTotal(); return; }
+    if (action === "add-sale-line") { document.querySelector("#sale-line-items")?.insertAdjacentHTML("beforeend", saleLineMarkup({}, false, currentSalesProductFlow(), nextSalesLineNumber())); renumberSalesLines(); updateSaleTotal(); applySavedColumnVisibility(); return; }
     if (action === "remove-sale-line") { pageLink.closest("tr")?.remove(); renumberSalesLines(); updateSaleTotal(); return; }
-    if (action === "add-order-line") { document.querySelector("#order-line-items .purchase-empty-lines")?.remove(); document.querySelector("#order-line-items")?.insertAdjacentHTML("beforeend", orderLineMarkup()); updateOrderTotal(); return; }
+    if (action === "add-order-line") { document.querySelector("#order-line-items .purchase-empty-lines")?.remove(); document.querySelector("#order-line-items")?.insertAdjacentHTML("beforeend", orderLineMarkup()); updateOrderTotal(); applySavedColumnVisibility(); return; }
     if (action === "add-receipt-line") {
       const order = purchaseOrders.find((item) => item.id === Number(state.receiptEditor?.orderId));
       document.querySelector("#receipt-line-items")?.insertAdjacentHTML("beforeend", receiptLineMarkup({ blank: true }, false, order));
@@ -13134,7 +13986,7 @@ function handleClick(event) {
     if (action === "remove-receipt-line") { pageLink.closest(".purchase-receipt-line")?.remove(); return; }
     if (action === "add-manual-delivery-line") { document.querySelector("#manual-delivery-lines")?.insertAdjacentHTML("beforeend", inventoryDeliveryLineMarkup()); return; }
     if (action === "remove-manual-delivery-line") { pageLink.closest(".inventory-manual-delivery-line")?.remove(); return; }
-    if (action === "add-order-section" || action === "add-order-note") { document.querySelector("#order-line-items .purchase-empty-lines")?.remove(); document.querySelector("#order-line-items")?.insertAdjacentHTML("beforeend", purchaseLineMarkup({ type: action === "add-order-section" ? "section" : "note" })); return; }
+    if (action === "add-order-section" || action === "add-order-note") { document.querySelector("#order-line-items .purchase-empty-lines")?.remove(); document.querySelector("#order-line-items")?.insertAdjacentHTML("beforeend", purchaseLineMarkup({ type: action === "add-order-section" ? "section" : "note" })); applySavedColumnVisibility(); return; }
     if (action === "purchase-catalog") { openPurchaseCatalog(); return; }
     if (action === "print-purchase") { window.print(); return; }
     if (action === "purchase-cloud") { savePurchaseOrder("draft"); return; }
@@ -13599,6 +14451,7 @@ function handleClick(event) {
   }
   const contactTab = event.target.closest("[data-contact-tab]");
   if (contactTab) {
+    window.ERPSharedSmartPanel?.closeMenus();
     document.querySelectorAll("[data-contact-tab]").forEach((button) => button.classList.toggle("is-active", button === contactTab));
     document.querySelectorAll("[data-contact-panel]").forEach((panel) => panel.classList.toggle("is-active", panel.dataset.contactPanel === contactTab.dataset.contactTab));
     return;
@@ -13644,6 +14497,29 @@ function handleClick(event) {
   if (removeTaxId) { removeTaxId.closest(".erp-contact-tin-extra")?.remove(); return; }
   if (event.target.closest("[data-contact-new]")) { pageContent.querySelector('#partner-contact-form [name="name"]')?.focus(); return; }
   if (event.target.closest("[data-contact-more]")) { showToast("Use the contact tabs to manage linked business details."); return; }
+  const contactWebsiteButton = event.target.closest("[data-contact-website]");
+  if (contactWebsiteButton) {
+    window.ERPSharedSmartPanel?.closeMenus();
+    const contact = state.contacts.find((item) => String(item.id) === String(contactWebsiteButton.dataset.id));
+    const website = String(contact?.website || pageContent.querySelector('#partner-contact-form [name="website"]')?.value || "").trim();
+    if (!website) { showToast("Add a website address to this contact first."); return; }
+    try {
+      const url = new URL(/^https?:\/\//i.test(website) ? website : `https://${website}`);
+      if (!['http:', 'https:'].includes(url.protocol)) throw new Error("Unsupported protocol");
+      window.open(url.href, "_blank", "noopener,noreferrer");
+    } catch {
+      showToast("Enter a valid website address on this contact first.");
+    }
+    return;
+  }
+  const contactAction = event.target.closest("[data-contact-action]");
+  if (contactAction?.dataset.contactAction === "direct-debit") {
+    window.ERPSharedSmartPanel?.closeMenus();
+    const contact = state.contacts.find((item) => String(item.id) === String(contactAction.dataset.id));
+    if (!contact) showToast("Save this contact before opening linked mandates.");
+    else openContactRelatedRecords(contact.id, "mandates");
+    return;
+  }
   const contactRelatedButton = event.target.closest("[data-contact-related]");
   if (contactRelatedButton) { openContactRelatedRecords(contactRelatedButton.dataset.id, contactRelatedButton.dataset.contactRelated); return; }
   const contactRelatedCreate = event.target.closest("[data-contact-related-create]");
@@ -13756,6 +14632,7 @@ function handleClick(event) {
   }
   if (event.target.closest("[data-invoice-editor-action='discard']")) {
     const returnPage = document.querySelector("#invoice-form")?.dataset.returnPage;
+    clearInvoiceEditorAutosave();
     state.invoiceEditor = null;
     state.invoicePaymentEditor = null;
     if (returnPage && returnPage !== state.page) setPage(returnPage);
@@ -13774,6 +14651,7 @@ function handleClick(event) {
     } else if (product) {
       document.querySelector("#sale-line-items")?.insertAdjacentHTML("beforeend", saleLineMarkup({ product: product.name, sku: product.sku }, false, currentSalesProductFlow(), nextSalesLineNumber()));
       renumberSalesLines();
+      applySavedColumnVisibility();
     }
     closeModal();
     if (!invoiceForm) updateSaleTotal();
@@ -13877,7 +14755,7 @@ function handleClick(event) {
     const linkedContact = state.contacts.find((item) => contactHasCustomerRole(item) && String(item.name || "").toLowerCase() === customer.toLowerCase());
     const salesTerms = String(data.get("terms") || data.get("termsNote") || existing?.terms || existing?.termsNote || "").trim();
     const internalNotes = String(data.get("notes") || data.get("otherInfoNote") || existing?.notes || existing?.otherInfoNote || "").trim();
-    const record = { id: existing?.id || Date.now(), ref: existing?.ref || String(data.get("reference")), customer, customerRef: String(data.get("customerRef") || "").trim(), invoiceAddress: String(data.get("invoiceAddress") || "").trim(), deliveryAddress: String(data.get("deliveryAddress") || "").trim(), pricelist: String(data.get("pricelist") || "").trim(), referrer: String(data.get("referrer") || "").trim(), customerId: (editorCustomerMatches ? state.salesEditor?.customerId : null) || linkedCustomer?.id || (String(existing?.customer || "").toLowerCase() === customer.toLowerCase() ? existing?.customerId : null) || null, contactId: (editorCustomerMatches ? state.salesEditor?.contactId : null) || linkedCustomer?.contactId || linkedContact?.id || (String(existing?.customer || "").toLowerCase() === customer.toLowerCase() ? existing?.contactId : null) || null, salesperson: String(data.get("salesperson") || "").trim(), company: String(data.get("company") || existing?.company || state.settings.companyName || "Arafat Chemica").trim(), sourceDocument: String(data.get("sourceDocument") || existing?.sourceDocument || state.salesEditor?.crmOpportunityRef || "").trim(), notes: internalNotes, otherInfoNote: internalNotes, orderDate: String(data.get("orderDate") || ""), expirationDate: String(data.get("expirationDate") || ""), deliveryDate: String(data.get("deliveryDate") || ""), deliveryPolicy: String(data.get("deliveryPolicy") || state.salesSettings.defaultDeliveryPolicy || "partial"), terms: salesTerms, termsNote: salesTerms, paymentTerms: String(data.get("paymentTerms") || state.salesSettings.defaultPaymentTerms || "Due on receipt"), lines, taxExcluded, taxAmount, total, status, salesChannel: existing?.salesChannel || state.salesEditor?.channel || "Wholesale", deliveryStatus: existing?.deliveryStatus || "To Deliver", invoiceStatus: status === "Sales Order" ? (existing?.invoiceStatus || "To Invoice") : "Nothing to Invoice" };
+    const record = { id: existing?.id || Date.now(), ref: existing?.ref || String(data.get("reference")), customer, customerRef: String(data.get("customerRef") || "").trim(), invoiceAddress: String(data.get("invoiceAddress") || "").trim(), deliveryAddress: String(data.get("deliveryAddress") || "").trim(), pricelist: String(data.get("pricelist") || "").trim(), currencyCode: "BDT", referrer: String(data.get("referrer") || "").trim(), customerId: (editorCustomerMatches ? state.salesEditor?.customerId : null) || linkedCustomer?.id || (String(existing?.customer || "").toLowerCase() === customer.toLowerCase() ? existing?.customerId : null) || null, contactId: (editorCustomerMatches ? state.salesEditor?.contactId : null) || linkedCustomer?.contactId || linkedContact?.id || (String(existing?.customer || "").toLowerCase() === customer.toLowerCase() ? existing?.contactId : null) || null, salesperson: String(data.get("salesperson") || "").trim(), company: String(data.get("company") || existing?.company || state.settings.companyName || "Arafat Chemica").trim(), sourceDocument: String(data.get("sourceDocument") || existing?.sourceDocument || state.salesEditor?.crmOpportunityRef || "").trim(), notes: internalNotes, otherInfoNote: internalNotes, orderDate: String(data.get("orderDate") || ""), expirationDate: String(data.get("expirationDate") || ""), deliveryDate: String(data.get("deliveryDate") || ""), deliveryPolicy: String(data.get("deliveryPolicy") || state.salesSettings.defaultDeliveryPolicy || "partial"), terms: salesTerms, termsNote: salesTerms, paymentTerms: String(data.get("paymentTerms") || state.salesSettings.defaultPaymentTerms || "Due on receipt"), lines, taxExcluded, taxAmount, total, status, salesChannel: existing?.salesChannel || state.salesEditor?.channel || "Wholesale", deliveryStatus: existing?.deliveryStatus || "To Deliver", invoiceStatus: status === "Sales Order" ? (existing?.invoiceStatus || "To Invoice") : "Nothing to Invoice" };
     record.crmOpportunityId = existing?.crmOpportunityId || state.salesEditor?.crmOpportunityId || record.crmOpportunityId || null;
     if (existing) Object.assign(existing, record); else state.salesOrders.push(record);
     try { localStorage.setItem("odooFmcgSalesOrders", JSON.stringify(state.salesOrders)); }
@@ -13959,10 +14837,12 @@ function handleClick(event) {
     const returnPage = form.dataset.returnPage || (kind === "out_invoice" ? "invoice-customer-invoices" : kind === "out_refund" ? "invoice-credit-notes" : kind === "in_refund" ? "invoice-vendor-refunds" : "invoice-vendor-bills");
     if (status === "Draft") {
       state.invoiceEditor = { id: record.id, returnPage };
+      persistInvoiceEditorAutosave(form);
       render();
       showToast("Invoice draft saved in this browser.");
       return;
     }
+    clearInvoiceEditorAutosave();
     state.invoiceEditor = null;
     setPage(returnPage);
     showToast("Document marked Posted in this local prototype.");
@@ -15488,6 +16368,78 @@ function openCategoryEdit(item) {
 }
 
 document.addEventListener("click", handleClick);
+document.addEventListener("click", (event) => {
+  const forecastView = event.target.closest("[data-sales-stock-view-forecast]");
+  if (forecastView) {
+    const productId = Number(forecastView.dataset.salesStockViewForecast);
+    const context = forecastView.dataset.salesStockContext === "purchase" ? "purchase" : "sales";
+    state.salesStockForecastReturn = captureSalesForecastReturnView();
+    state.salesStockForecastProductId = productId || null;
+    state.salesStockForecastOrderId = context === "sales" ? forecastView.dataset.salesStockOrder || null : null;
+    state.salesStockForecastContext = context;
+    state.salesStockForecastReturnPage = state.page;
+    state.salesStockForecastPurchaseOrderId = context === "purchase" ? forecastView.dataset.salesStockPurchaseOrder || forecastView.dataset.salesStockOrder || null : null;
+    closeSalesStockAvailability();
+    setPage("sales-stock-forecast", { module: "sales", editor: { kind: "sales-stock-forecast", id: productId, orderId: state.salesStockForecastOrderId, context, returnPage: state.salesStockForecastReturnPage, purchaseOrderId: state.salesStockForecastPurchaseOrderId } });
+    return;
+  }
+  const availabilityButton = event.target.closest("[data-sales-stock-availability]");
+  if (availabilityButton) {
+    event.preventDefault();
+    openSalesStockAvailability(availabilityButton);
+    return;
+  }
+  const forecastBack = event.target.closest("[data-sales-forecast-back]");
+  if (forecastBack) {
+    const savedView = state.salesStockForecastReturn;
+    if (restoreSalesForecastReturnView(savedView)) return;
+    if (forecastBack.dataset.salesForecastContext === "purchase") {
+      const returnPage = ["rfq", "orders"].includes(forecastBack.dataset.salesForecastReturnPage) ? forecastBack.dataset.salesForecastReturnPage : "rfq";
+      const orderId = forecastBack.dataset.salesForecastPurchaseOrder;
+      closeSalesStockAvailability();
+      setPage(returnPage, { module: "purchase" });
+      if (orderId) openOrderModal(orderId);
+      return;
+    }
+    const order = state.salesOrders.find((item) => Number(item.id) === Number(forecastBack.dataset.salesForecastBack));
+    closeSalesStockAvailability();
+    const returnPage = order && ["Quotation", "Quotation Sent"].includes(order.status) ? "sales-quotations" : order ? "sales-orders" : "sales-quotations";
+    setPage(returnPage);
+    if (order) openSalesOrderModal(order.id);
+    return;
+  }
+  const forecastOrder = event.target.closest("[data-sales-forecast-open-sale]");
+  if (forecastOrder) {
+    const order = state.salesOrders.find((item) => Number(item.id) === Number(forecastOrder.dataset.salesForecastOpenSale));
+    if (order) {
+      setPage(["Quotation", "Quotation Sent"].includes(order.status) ? "sales-quotations" : "sales-orders");
+      openSalesOrderModal(order.id);
+    }
+    return;
+  }
+  const forecastAction = event.target.closest("[data-sales-forecast-action]");
+  if (forecastAction) {
+    const product = salesProducts.find((item) => Number(item.id) === Number(state.salesStockForecastProductId));
+    if (!product) return;
+    const page = forecastAction.dataset.salesForecastAction === "replenish" ? "inventory-replenishment" : "inventory-adjustments";
+    setPage(page);
+    state.search = product.sku || product.name;
+    render();
+    return;
+  }
+  if (event.target.closest("[data-sales-forecast-export]")) {
+    const product = salesProducts.find((item) => Number(item.id) === Number(state.salesStockForecastProductId));
+    if (!product) return;
+    const forecast = salesStockForecastData(product);
+    const events = [...forecast.incomingEvents, ...forecast.outgoingEvents].sort((a, b) => a.date - b.date);
+    const sku = String(product.sku || product.id).replace(/[^a-z0-9_-]+/gi, "-");
+    downloadCsv(`forecast-${sku}.csv`, [["Date", "Direction", "Quantity", "Unit", "Reference", "Partner"], ...events.map((row) => [salesForecastDateText(row.date), row.direction === "in" ? "Incoming" : "Outgoing", formatSalesForecastQuantity(row.quantity), product.stockUom || "Units", row.reference, row.partner]), ["", "On Hand", formatSalesForecastQuantity(forecast.onHand), product.stockUom || "Units", "", ""], ["", "Forecasted", formatSalesForecastQuantity(forecast.forecasted), product.stockUom || "Units", "", ""], ["", "Forecasted with Pending", formatSalesForecastQuantity(forecast.forecastedWithPending), product.stockUom || "Units", "", ""]]);
+    return;
+  }
+  if (!event.target.closest("#sales-stock-availability-popover")) closeSalesStockAvailability();
+});
+document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeSalesStockAvailability(); });
+window.addEventListener("scroll", closeSalesStockAvailability, { capture: true, passive: true });
 document.addEventListener("input", (event) => {
   if (!event.target.matches("[data-credit-account-search]")) return;
   const query = String(event.target.value || "").trim().toLowerCase();
@@ -16007,6 +16959,69 @@ document.addEventListener("dragend", () => {
   document.querySelectorAll(".launcher-tile.is-dragging, .launcher-tile.is-drop-target").forEach((tile) => tile.classList.remove("is-dragging", "is-drop-target"));
   state.launcherDrag = null;
 });
+document.addEventListener("dragstart", (event) => {
+  const grip = event.target.closest("#sale-line-items [data-sales-line-grip], #order-line-items [data-sales-line-grip]");
+  const row = grip?.closest("tr");
+  const tbody = row?.closest("#sale-line-items, #order-line-items");
+  if (!grip || !row || !tbody || grip.disabled || state.salesLineDrag) return;
+  state.salesLineDrag = { row, tbody, isSales: tbody.id === "sale-line-items", originalRows: [...tbody.rows], dropped: false };
+  row.classList.add("is-sales-line-dragging");
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", "sales-order-line");
+  }
+});
+document.addEventListener("dragover", (event) => {
+  const drag = state.salesLineDrag;
+  if (!drag || !event.target.closest("#sale-line-items, #order-line-items") || !drag.tbody.isConnected) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+  const target = event.target.closest("tr");
+  drag.tbody.querySelectorAll(".sales-line-drop-before, .sales-line-drop-after").forEach((item) => item.classList.remove("sales-line-drop-before", "sales-line-drop-after"));
+  if (!target || target === drag.row) {
+    drag.dropTarget = null;
+    drag.dropAfter = true;
+    if (!target) drag.tbody.append(drag.row);
+    return;
+  }
+  const after = event.clientY > target.getBoundingClientRect().top + target.getBoundingClientRect().height / 2;
+  const reference = after ? target.nextElementSibling : target;
+  if (reference !== drag.row) drag.tbody.insertBefore(drag.row, reference);
+  target.classList.add(after ? "sales-line-drop-after" : "sales-line-drop-before");
+  drag.dropTarget = target;
+  drag.dropAfter = after;
+});
+document.addEventListener("drop", (event) => {
+  const drag = state.salesLineDrag;
+  if (!drag || !event.target.closest("#sale-line-items, #order-line-items") || !drag.tbody.isConnected) return;
+  event.preventDefault();
+  const target = event.target.closest("tr");
+  if (!target) drag.tbody.append(drag.row);
+  drag.dropped = true;
+  if (drag.isSales) { renumberSalesLines(); updateSaleTotal(); }
+  else updateOrderTotal();
+  applySavedColumnVisibility();
+});
+document.addEventListener("dragend", () => {
+  const drag = state.salesLineDrag;
+  if (!drag) return;
+  if (!drag.dropped && drag.tbody.isConnected) drag.tbody.append(...drag.originalRows.filter((row) => row.isConnected));
+  drag.tbody.querySelectorAll(".is-sales-line-dragging, .sales-line-drop-before, .sales-line-drop-after").forEach((row) => row.classList.remove("is-sales-line-dragging", "sales-line-drop-before", "sales-line-drop-after"));
+  state.salesLineDrag = null;
+});
+document.addEventListener("keydown", (event) => {
+  const grip = event.target.closest("#sale-line-items [data-sales-line-grip], #order-line-items [data-sales-line-grip]");
+  if (!grip || grip.disabled || !event.altKey || !["ArrowUp", "ArrowDown"].includes(event.key)) return;
+  const row = grip.closest("tr");
+  const neighbor = event.key === "ArrowUp" ? row?.previousElementSibling : row?.nextElementSibling;
+  if (!row || !neighbor) return;
+  event.preventDefault();
+  if (event.key === "ArrowUp") row.parentElement.insertBefore(row, neighbor);
+  else row.parentElement.insertBefore(neighbor, row);
+  if (row.closest("#sale-line-items")) { renumberSalesLines(); updateSaleTotal(); }
+  else updateOrderTotal();
+  applySavedColumnVisibility();
+});
 function updateInventoryListDrag(event, drag = state.inventoryListDrag) {
   if (!drag || event.pointerId !== drag.pointerId) return;
   event.preventDefault();
@@ -16217,6 +17232,8 @@ document.addEventListener("focusin", (event) => {
 });
 window.addEventListener("resize", () => document.querySelectorAll("[data-product-gift-picker]").forEach(positionSalesProductGiftPickerMenu));
 window.addEventListener("scroll", () => document.querySelectorAll("[data-product-gift-picker]").forEach(positionSalesProductGiftPickerMenu), true);
+window.addEventListener("resize", repositionSalesLineColumnPopover);
+window.addEventListener("scroll", repositionSalesLineColumnPopover, true);
 document.addEventListener("input", (event) => {
   const customFieldSearch = event.target.closest("[data-custom-field-search]");
   if (customFieldSearch) {
@@ -16371,7 +17388,7 @@ document.addEventListener("input", (event) => {
     const nextInput = document.querySelector("#global-search");
     if (nextInput) { nextInput.focus({ preventScroll: true }); nextInput.setSelectionRange(cursor, cursor); }
   }
-  if (event.target.matches("[data-line-qty], [data-line-price]")) updateOrderTotal();
+  if (event.target.matches("[data-line-qty], [data-line-price], [data-line-discount]")) updateOrderTotal();
   if (event.target.matches("[data-sale-qty], [data-sale-price]")) updateSaleTotal();
   if (event.target.matches("[data-invoice-qty], [data-invoice-price]")) updateInvoiceTotal();
 });
@@ -16586,15 +17603,19 @@ document.addEventListener("change", (event) => {
     return;
   }
   if (event.target.matches("[data-partner-kind]")) {
-    const roles = { customer: event.target.value === "dealer", supplier: event.target.value === "supplier" };
+    const roles = {
+      customer: event.target.value === "customer",
+      supplier: event.target.value === "supplier",
+      dealer: event.target.value === "dealer",
+      nonRegisteredDealer: event.target.value === "non-registered-dealer",
+    };
     document.querySelectorAll("[data-partner-role]").forEach((input) => { input.checked = roles[input.dataset.partnerRole] === true; });
-    document.querySelectorAll("[data-partner-kind-panel]").forEach((panel) => { panel.hidden = !roles[panel.dataset.partnerKindPanel === "dealer" ? "customer" : panel.dataset.partnerKindPanel]; });
+    syncPartnerContactRolePanels(event.target.form);
     const label = document.querySelector("[data-partner-kind-note]");
-    if (label) label.textContent = event.target.value === "supplier" ? "Only approved suppliers appear in Purchase order vendor choices." : event.target.value === "dealer" ? "Dealer details are shared with Sales customers." : "Add this record as a supplier or dealer from the Record Type selector.";
+    if (label) label.textContent = event.target.value === "supplier" ? "Only approved suppliers appear in Purchase order vendor choices." : event.target.value === "dealer" || event.target.value === "non-registered-dealer" ? "Dealer details are shared with Sales customers." : "Choose the contact roles below to add this record to each category.";
   }
   if (event.target.matches("[data-partner-role]")) {
-    const roles = Object.fromEntries([...document.querySelectorAll("[data-partner-role]")].map((input) => [input.dataset.partnerRole, input.checked]));
-    document.querySelectorAll("[data-partner-kind-panel]").forEach((panel) => { panel.hidden = !roles[panel.dataset.partnerKindPanel === "dealer" ? "customer" : panel.dataset.partnerKindPanel]; });
+    syncPartnerContactRolePanels(event.target.form);
   }
   const productConfigForm = event.target.closest("#inventory-product-config-form");
   if (productConfigForm) syncInventoryProductConfigurationForm(productConfigForm);
@@ -16766,17 +17787,18 @@ document.addEventListener("change", (event) => {
   if (event.target.matches("[data-line-uom]")) {
     const line = event.target.closest(".order-line");
     const quantity = line?.querySelector("[data-line-qty]");
+    const isPurchaseLine = line?.classList.contains("purchase-line");
+    const purchaseProduct = isPurchaseLine ? salesProducts.find((item) => item.id === Number(line.querySelector("[data-purchase-product]")?.value)) : null;
     if (quantity) {
-      const decimalUnit = event.target.value === "kg" || event.target.value === "L";
+      const decimalUnit = isPurchaseLine ? purchaseUnitAllowsFraction(event.target.value, purchaseProduct) : event.target.value === "kg" || event.target.value === "L";
       quantity.step = decimalUnit ? "0.001" : "1";
       quantity.min = decimalUnit ? "0.001" : "1";
       if (!decimalUnit && Number(quantity.value) > 0 && !Number.isInteger(Number(quantity.value))) quantity.value = String(Math.ceil(Number(quantity.value)));
-      if (line?.classList.contains("purchase-line")) {
-        const product = salesProducts.find((item) => item.id === Number(line.querySelector("[data-purchase-product]")?.value));
+      if (isPurchaseLine) {
         const price = line.querySelector("[data-line-price]");
-        const previousUnit = event.target.dataset.currentUnit || product?.stockUom || event.target.value;
-        const previousFactor = product ? purchaseUnitFactor(product, previousUnit) : null;
-        const nextFactor = product ? purchaseUnitFactor(product, event.target.value) : null;
+        const previousUnit = event.target.dataset.currentUnit || purchaseProduct?.stockUom || event.target.value;
+        const previousFactor = purchaseProduct ? purchaseUnitFactor(purchaseProduct, previousUnit) : null;
+        const nextFactor = purchaseProduct ? purchaseUnitFactor(purchaseProduct, event.target.value) : null;
         if (price && previousFactor && nextFactor) price.value = (Number(price.value || 0) * nextFactor / previousFactor).toFixed(2);
         event.target.dataset.currentUnit = event.target.value;
       }
@@ -16792,15 +17814,19 @@ document.addEventListener("change", (event) => {
       const price = line.querySelector("[data-line-price]");
       const tax = line.querySelector("[data-line-tax]");
       const note = line.querySelector(".purchase-product-note");
+      const packNote = line.querySelector(".purchase-product-pack-note");
       const units = purchaseUnits(product);
       if (unit) { unit.innerHTML = units.map((name) => { const factor = purchaseUnitFactor(product, name); return `<option value="${escapeHtml(name)}" ${name === product.stockUom ? "selected" : ""} ${factor ? "" : "disabled"}>${escapeHtml(name)}${factor ? "" : " · configure pack"}</option>`; }).join(""); unit.dataset.currentUnit = product.stockUom; }
-      if (note) note.textContent = `${product.sku} · ${product.packNote || ""}`;
-      const decimal = ["kg", "L"].includes(product.stockUom);
+      const skuAlreadyInName = Boolean(product.sku && String(product.name || "").toLowerCase().startsWith(`[${String(product.sku).toLowerCase()}]`));
+      if (note) { note.textContent = product.sku || ""; note.hidden = !product.sku || skuAlreadyInName; }
+      if (packNote) { packNote.textContent = product.packNote || ""; packNote.hidden = !product.packNote; }
+      const decimal = purchaseUnitAllowsFraction(product.stockUom, product);
       if (qty) { qty.min = decimal ? "0.001" : "1"; qty.step = decimal ? "0.001" : "1"; qty.value = "1"; }
       if (price) price.value = String(product.purchasePrice ?? product.cost ?? 0);
       if (tax) tax.innerHTML = invoiceTaxOptions("in_invoice", product.purchaseTaxId || null);
       updateOrderTotal();
     }
+    if (line && !product) updateOrderTotal();
   }
   if (event.target.matches("[data-receipt-product]")) {
     const row = event.target.closest(".purchase-receipt-line");
@@ -16895,6 +17921,47 @@ document.addEventListener("change", (event) => {
     updateInvoiceTotal();
   }
   if (event.target.matches("[data-invoice-tax]")) updateInvoiceTotal();
+  if (event.target.matches("#invoice-form [name='partner']")) {
+    const form = event.target.closest("#invoice-form");
+    const kind = form?.dataset.kind || "out_invoice";
+    const contact = accountingContactForPartner(event.target.value);
+    if (state.invoiceEditor) state.invoiceEditor.contactId = contact?.id || null;
+    const termsSelect = form?.querySelector("[name='paymentTerms']");
+    const terms = kind.startsWith("in_")
+      ? contact?.purchasePaymentTerms || contact?.paymentTerms || "Immediate"
+      : contact?.salesPaymentTerms || contact?.paymentTerms || state.salesSettings.defaultPaymentTerms || "Due on receipt";
+    if (termsSelect) {
+      if (![...termsSelect.options].some((option) => option.value === terms)) termsSelect.add(new Option(terms, terms));
+      termsSelect.value = terms;
+      const dueDate = form.querySelector("[name='dueDate']");
+      if (dueDate) dueDate.value = invoiceDueDate(form.querySelector("[name='invoiceDate']")?.value, terms);
+    }
+    const otherInfo = form?.querySelector('[data-invoice-panel="other-info"]');
+    const bankSelect = otherInfo?.querySelector("[name='recipientBank']");
+    if (bankSelect) {
+      const bankNames = (Array.isArray(contact?.bankAccounts) ? contact.bankAccounts : []).map((bank) => {
+        const name = String(bank?.bank || bank?.name || "Bank account").trim();
+        const account = String(bank?.accountNumber || "").replace(/\s+/g, "");
+        const holder = String(bank?.accountHolder || "").trim();
+        return [name, account ? `•••• ${account.slice(-4)}` : "", holder].filter(Boolean).join(" · ");
+      }).filter(Boolean);
+      const selected = kind.startsWith("in_") ? contact?.defaultRecipientBank || bankNames[0] || "" : "";
+      bankSelect.replaceChildren(new Option(bankNames.length ? "Select a bank account" : "No bank account configured", ""), ...bankNames.map((name) => new Option(name, name)));
+      bankSelect.value = bankNames.includes(selected) ? selected : "";
+    }
+    const fiscalSelect = otherInfo?.querySelector("[name='fiscalPosition']");
+    if (fiscalSelect) {
+      const fiscalPosition = contact?.fiscalPosition || "";
+      if (fiscalPosition && ![...fiscalSelect.options].some((option) => option.value === fiscalPosition)) fiscalSelect.add(new Option(fiscalPosition, fiscalPosition));
+      fiscalSelect.value = fiscalPosition;
+    }
+    const methodSelect = otherInfo?.querySelector("[name='paymentMethod']");
+    if (methodSelect && kind.startsWith("in_")) {
+      const method = contact?.vendorPaymentMethod || "Manual";
+      if (![...methodSelect.options].some((option) => option.value === method)) methodSelect.add(new Option(method, method));
+      methodSelect.value = method;
+    }
+  }
   if (event.target.matches("#invoice-form [name='invoiceDate'], #invoice-form [name='paymentTerms']")) {
     const form = document.querySelector("#invoice-form");
     const dueDate = form?.querySelector("[name='dueDate']");
@@ -16904,6 +17971,32 @@ document.addEventListener("change", (event) => {
     const due = Number(event.target.selectedOptions[0]?.dataset.due || 0);
     const amount = event.target.form?.querySelector("[name='amount']");
     if (amount) amount.value = due.toFixed(2);
+    const invoice = state.invoices.find((row) => row.id === Number(event.target.value));
+    const contact = accountingContactForPartner(invoice?.partner, invoice?.contactId);
+    const form = event.target.form;
+    const methodSelect = form?.querySelector("[name='method']");
+    if (methodSelect && invoice?.kind.startsWith("in_") && contact?.vendorPaymentMethod) {
+      if (![...methodSelect.options].some((option) => option.value === contact.vendorPaymentMethod)) methodSelect.add(new Option(contact.vendorPaymentMethod, contact.vendorPaymentMethod));
+      methodSelect.value = contact.vendorPaymentMethod;
+    }
+    const journalSelect = form?.querySelector("[name='journal']");
+    if (journalSelect && invoice?.kind.startsWith("in_")) {
+      const preferredType = /bank|cheque|mobile|bKash|Nagad/i.test(contact?.vendorPaymentMethod || "") ? "bank" : "cash";
+      const preferredJournal = accountingUsableJournals().find((journal) => journal.type === preferredType && [...journalSelect.options].some((option) => option.value === journal.name));
+      if (preferredJournal) journalSelect.value = preferredJournal.name;
+    }
+    const bankSelect = form?.querySelector("[name='recipientBank']");
+    if (bankSelect && contact) {
+      const bankNames = (Array.isArray(contact.bankAccounts) ? contact.bankAccounts : []).map((bank) => {
+        const name = String(bank?.bank || bank?.name || "Bank account").trim();
+        const account = String(bank?.accountNumber || "").replace(/\s+/g, "");
+        const holder = String(bank?.accountHolder || "").trim();
+        return [name, account ? `•••• ${account.slice(-4)}` : "", holder].filter(Boolean).join(" · ");
+      }).filter(Boolean);
+      const selected = contact.defaultRecipientBank || invoice?.recipientBank || "";
+      bankSelect.replaceChildren(new Option(bankNames.length ? "Select a bank account" : "No bank account configured", ""), ...bankNames.map((name) => new Option(name, name)));
+      bankSelect.value = bankNames.includes(selected) ? selected : "";
+    }
   }
   if (event.target.matches("[data-select-row]")) {
     const id = ["contacts", "inventory-units", "inventory-categories", "inventory-gift-configurations", "inventory-return-reasons"].includes(state.page) ? String(event.target.dataset.selectRow) : Number(event.target.dataset.selectRow);
@@ -17465,6 +18558,9 @@ document.addEventListener("submit", (event) => {
     const supplierReference = get("supplierReference", previous?.supplierReference || (previousWasSupplier ? previous?.reference : ""));
     const partnerReference = get("partnerReference", previous?.partnerReference || (!previousWasSupplier ? previous?.reference : ""));
     const isSupplier = data.get("isSupplier") === "1";
+    const isCustomer = data.get("isCustomer") === "1";
+    const isDealer = data.get("isDealer") === "1";
+    const isNonRegisteredDealer = data.get("isNonRegisteredDealer") === "1";
     const record = {
       ...(previous || {}), id, kind, name,
       email: String(data.get("email") || "").trim(), phone: String(data.get("phone") || "").trim(),
@@ -17473,16 +18569,22 @@ document.addEventListener("submit", (event) => {
       website: get("website"), tags: get("tags"), recordType: get("recordType", "person"),
       company: get("company"), companyEmployer: get("company"), jobTitle: get("jobTitle"), partnerLevel: get("partnerLevel"), language: get("language", "en_US"),
       reference: isSupplier ? supplierReference : partnerReference, supplierReference, partnerReference, paymentTerms: String(data.get("paymentTerms") || "Immediate").trim(),
-      area: String(data.get("area") || city).trim(), dealerType: String(data.get("dealerType") || "Dealer").trim(),
+      area: String(data.get("area") || city).trim(), dealerType: isNonRegisteredDealer ? "Non-registered Dealer" : String(data.get("dealerType") || previous?.dealerType || "Dealer").trim(),
       creditLimit: Number(data.get("creditLimit") || 0), taxId: String(data.get("taxId") || "").trim(), taxIds,
       bankAccounts: getRows("bank"), receivableAccount: get("receivableAccount", "121000 Accounts Receivable"), payableAccount: get("payableAccount", "211000 Accounts Payable"), autoPostBills: get("autoPostBills", "Ask after 3 validations without edits"), invoiceFollowUpsEnabled: data.get("invoiceFollowUpsEnabled") === "1", peppolStatus: get("peppolStatus", "Unchecked"),
       commissionPlanId: get("commissionPlanId"), commissionPlan: selectedPlan?.name || "", activation: get("activation"), levelWeight: Number(get("levelWeight", "0") || 0), latestReview: get("latestReview"), nextReview: get("nextReview"), partnershipDate: get("partnershipDate"), latitude: get("latitude", "0.0000000"), longitude: get("longitude", "0.0000000"),
       comment: get("comment"), legalForm: get("legalForm"), formationDate: get("formationDate"), beneficialOwners: getRows("ubo"), relatedContacts: getRows("related"),
       notes: get("notes"), image: String(data.get("image") || previous?.image || ""),
-      isSupplier, isCustomer: data.get("isCustomer") === "1",
+      isSupplier, isCustomer, isDealer, isNonRegisteredDealer,
       defaultPurchaseVendor: data.get("defaultPurchaseVendor") === "1" && isSupplier,
       approved: isSupplier ? (contactHasSupplierRole(previous) && isSupplierApproved(previous)) : undefined,
     };
+    record.purchasePaymentTerms = get("purchasePaymentTerms", previous?.purchasePaymentTerms || (previousWasSupplier ? previous?.paymentTerms : "Immediate")) || (previousWasSupplier ? previous?.paymentTerms : "Immediate");
+    record.salesPaymentTerms = get("salesPaymentTerms", previous?.salesPaymentTerms || (!previousWasSupplier ? previous?.paymentTerms : state.salesSettings.defaultPaymentTerms || "Due on receipt")) || (!previousWasSupplier ? previous?.paymentTerms : state.salesSettings.defaultPaymentTerms || "Due on receipt");
+    record.paymentTerms = isSupplier ? record.purchasePaymentTerms : record.salesPaymentTerms;
+    record.fiscalPosition = get("fiscalPosition", previous?.fiscalPosition || "");
+    record.vendorPaymentMethod = get("vendorPaymentMethod", previous?.vendorPaymentMethod || "Manual");
+    record.defaultRecipientBank = get("defaultRecipientBank", previous?.defaultRecipientBank || "");
     if (!persistPartnerContact(record)) return;
     const returnPage = state.contactEditor?.returnPage || "contacts";
     state.contactEditor = null;
@@ -18758,7 +19860,7 @@ document.addEventListener("submit", (event) => {
     const prefix = vendor ? "PAY" : "RCT";
     const previousDue = Number(invoice.amountDue || 0);
     const previousStatus = invoice.status;
-    state.invoicePayments.push({ id: Date.now(), ref: `${prefix}/${new Date().getFullYear()}/${String(state.invoicePayments.length + 1).padStart(4, "0")}`, invoiceId: invoice.id, partner: invoice.partner, vendor, date: paymentDate, journal: String(data.get("journal")), reference: String(data.get("reference") || "").trim(), amount, reconciled: false, state: "To Reconcile" });
+    state.invoicePayments.push({ id: Date.now(), ref: `${prefix}/${new Date().getFullYear()}/${String(state.invoicePayments.length + 1).padStart(4, "0")}`, invoiceId: invoice.id, partner: invoice.partner, contactId: invoice.contactId || null, vendor, date: paymentDate, journal: String(data.get("journal")), method: String(data.get("method") || "Manual"), recipientBank: String(data.get("recipientBank") || "").trim(), reference: String(data.get("reference") || "").trim(), amount, reconciled: false, state: "To Reconcile" });
     invoice.amountDue = Math.max(0, Number(invoice.amountDue || 0) - amount);
     invoice.status = invoice.amountDue <= 0.005 ? "Paid" : "Partial";
     if (!persistInvoiceData()) {
@@ -18972,10 +20074,10 @@ document.addEventListener("change", (event) => {
     const table = currentListTable();
     const column = listColumnItems(table).find((item) => item.index === Number(columnToggle.dataset.columnIndex));
     if (!column) return;
-    const columnKey = `${column.index}::${column.label}`;
     const visibilityKey = columnVisibilityKey();
+    const columnKey = columnVisibilityToken(visibilityKey, column.index, column.label);
     const initialVisibility = state.columnVisibility[visibilityKey] || defaultColumnVisibility(visibilityKey);
-    const current = Array.isArray(initialVisibility) ? new Set(initialVisibility) : new Set(listColumnItems(table).map((item) => `${item.index}::${item.label}`));
+    const current = Array.isArray(initialVisibility) ? new Set(initialVisibility) : new Set(listColumnItems(table).map((item) => columnVisibilityToken(visibilityKey, item.index, item.label)));
     if (columnToggle.checked) current.add(columnKey); else current.delete(columnKey);
     state.columnVisibility[visibilityKey] = [...current];
     localStorage.setItem("odooColumnVisibility", JSON.stringify(state.columnVisibility));
@@ -18990,18 +20092,31 @@ document.addEventListener("change", (event) => {
     const line = saleProductChoice.closest(".sale-line");
     const unit = line?.querySelector("[data-sale-uom]");
     if (product && unit) {
+      saleProductChoice.title = salesProductLineName(product);
+      const availabilityButton = line.querySelector("[data-sales-stock-availability]");
+      if (availabilityButton) {
+        const forecast = salesStockForecastData(product);
+        availabilityButton.dataset.salesStockAvailability = String(product.id);
+        availabilityButton.setAttribute("aria-label", `Availability for ${salesProductLineName(product)}`);
+        availabilityButton.classList.toggle("is-negative", forecast.forecasted < 0);
+        availabilityButton.classList.toggle("is-positive", forecast.forecasted >= 0);
+      }
+      const description = line.querySelector(".sale-product-description");
+      if (description) description.textContent = salesProductLineDescription(product);
+      const variantCell = line.querySelector(".sale-product-variant-cell");
+      if (variantCell) variantCell.textContent = product.variantLabel || product.variant || product.model || product.productClass || "—";
       unit.innerHTML = product.saleUnits.map((value, index) => `<option value="${escapeHtml(value)}" ${index === 0 ? "selected" : ""} ${product.unitFactors?.[value] ? "" : "disabled"}>${escapeHtml(value)}${product.unitFactors?.[value] ? "" : " · configure pack"}</option>`).join("");
       unit.dataset.currentUnit = product.saleUnits[0] || product.stockUom;
-      const notes = line.querySelectorAll(".sales-line-note");
-      if (notes[0]) notes[0].textContent = product.sku;
-      if (notes[1]) notes[1].textContent = product.packNote;
+      const unitNote = line.querySelector(".sale-uom-note");
+      if (unitNote) unitNote.textContent = product.packNote;
       const productCell = saleProductChoice.closest("td");
       productCell?.querySelector(".sale-promotion-gift-choice")?.remove();
       productCell?.querySelector(".sale-promotion-gift-fixed")?.remove();
       productCell?.querySelector("[data-sale-promotion-gift]")?.remove();
       productCell?.querySelector("[data-sale-consumer-offer]")?.remove();
       const offer = salesProductOffer(product);
-      if (notes[0]) notes[0].insertAdjacentHTML("afterend", `${salesLineConsumerOfferSelectMarkup(product, offer?.id)}${salesLinePromotionGiftMarkup(product, "", false, offer?.id)}`);
+      const offerDetails = productCell?.querySelector(".sale-line-offer-details");
+      if (offerDetails) offerDetails.innerHTML = `${salesLineConsumerOfferSelectMarkup(product, offer?.id)}${salesLinePromotionGiftMarkup(product, "", false, offer?.id)}`;
       const qty = line.querySelector("[data-sale-qty]");
       const decimal = salesUnitAllowsFraction(product, product.saleUnits[0]);
       if (qty) { qty.min = decimal ? "0.001" : "1"; qty.step = decimal ? "0.001" : "1"; qty.value = "1"; }
@@ -19181,6 +20296,7 @@ inventorySeedDemoCatalog();
 purgeLegacyDemoProducts();
 persistLastRoute({ historyMode: "replace" });
 render();
+restorePageScrollPosition();
 
 document.addEventListener("change", (event) => {
   const analysisField = event.target.closest("[data-purchase-analysis-field]");
@@ -19211,3 +20327,26 @@ document.addEventListener("change", (event) => {
   state.purchasePage = 0;
   render();
 });
+
+function queueInvoiceEditorAutosave() {
+  if (state.invoiceAutosaveQueued) return;
+  state.invoiceAutosaveQueued = true;
+  queueMicrotask(() => {
+    state.invoiceAutosaveQueued = false;
+    persistInvoiceEditorAutosave();
+  });
+}
+
+document.addEventListener("input", (event) => {
+  if (event.target.closest?.("#invoice-form")) queueInvoiceEditorAutosave();
+});
+
+document.addEventListener("change", (event) => {
+  if (event.target.closest?.("#invoice-form")) queueInvoiceEditorAutosave();
+});
+
+document.addEventListener("click", (event) => {
+  if (document.querySelector("#invoice-form")) queueInvoiceEditorAutosave();
+});
+
+window.addEventListener("pagehide", () => persistInvoiceEditorAutosave());

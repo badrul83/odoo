@@ -1128,7 +1128,26 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .erp-contact-smartbar .erp-contact-smart-button[data-contact-smart="tasks"] { min-width: 82px; }
 .erp-contact-smartbar .erp-contact-smart-more { min-width: 74px; }
 .erp-contact-smartbar .erp-contact-smart-more .erp-shared-smart-panel__copy { display: flex; align-items: center; gap: 5px; }
-.erp-contact-smartbar .erp-contact-smart-more svg { width: 14px; height: 14px; flex: 0 0 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.erp-contact-smartbar .erp-contact-smart-button .erp-shared-smart-panel__copy strong { color: #343940; font-size: 12px; font-weight: 500; }
+.erp-contact-smartbar .erp-contact-smart-button .erp-shared-smart-panel__copy small { color: #343940; font-size: 11px; font-weight: 500; }
+.erp-contact-smartbar .erp-contact-smart-more-button { min-width: 74px; min-height: 33px; gap: 5px; padding: 0 9px; font-size: 12px; font-weight: 500; }
+.erp-contact-smartbar .erp-contact-smart-more-button > svg { width: 14px; height: 14px; flex: 0 0 14px; }
+.erp-contact-smartbar .erp-contact-smart-more-button[aria-expanded="true"] { z-index: 61; margin: -1px; border: 1px solid #078c8e; border-radius: 0 4px 4px 0; color: #25373a; background: #e6f5f3; }
+.erp-contact-smartbar .erp-contact-smart-menu { top: calc(100% + 5px); right: 0; z-index: 60; width: 176px; min-width: 176px; max-width: min(240px,calc(100vw - 20px)); max-height: min(65vh,340px); overflow-y: auto; padding: 6px 6px 7px; border-color: #d4d3da; border-radius: 11px; box-shadow: 0 9px 20px rgba(27,23,31,.2); }
+.erp-contact-smartbar .erp-contact-smart-menu .erp-shared-smart-panel__button { min-height: 42px; gap: 8px; padding: 4px 7px; border-radius: 4px; color: #282432; font-family: Roboto, "Segoe UI", Arial, sans-serif; font-size: 12px; font-weight: 400; }
+.erp-contact-smartbar .erp-contact-smart-menu .erp-shared-smart-panel__button:hover:not(:disabled) { color: #211d2d; background: #f3f0f4; }
+.erp-contact-smartbar .erp-contact-smart-menu .erp-shared-smart-panel__button:focus-visible { outline: 2px solid #806584; outline-offset: -2px; }
+.erp-contact-smart-menu .erp-contact-smart-menu-icon { display: grid; width: 20px; height: 20px; flex: 0 0 20px; place-items: center; color: #765171; }
+.erp-contact-smart-menu .erp-contact-smart-menu-icon > svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+.erp-contact-smart-menu .erp-contact-smart-menu-icon-shareholders > svg,
+.erp-contact-smart-menu .erp-contact-smart-menu-icon-shareholders > svg circle,
+.erp-contact-smart-menu .erp-contact-smart-menu-icon-shareholders > svg path { fill: #684461; stroke: #684461; stroke-width: 1.25; }
+.erp-contact-smart-menu .erp-contact-smart-menu-icon-website > svg { stroke: #df4146; }
+.erp-contact-smart-menu .erp-contact-smart-menu-icon-website > svg circle { fill: #df4146; stroke: #df4146; }
+.erp-contact-smart-menu .erp-contact-smart-menu-icon-website > svg path { stroke: #fff; stroke-width: 1.7; }
+.erp-contact-smart-menu .erp-shared-smart-panel__copy { gap: 1px; white-space: normal; }
+.erp-contact-smart-menu .erp-shared-smart-panel__copy strong { color: #282432; font-family: Roboto, "Segoe UI", Arial, sans-serif; font-size: 12px; font-weight: 500; }
+.erp-contact-smart-menu .erp-shared-smart-panel__copy small { color: #60465d; font-family: Roboto, "Segoe UI", Arial, sans-serif; font-size: 10px; font-weight: 500; }
 .erp-contact-role-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin: 0 0 20px; padding: 10px 12px 12px; border: 1px solid #e0e5e8; border-radius: 5px; }
 .erp-contact-role-controls legend { padding: 0 5px; color: #59656e; font-size: 10px; font-weight: 700; text-transform: uppercase; }
 .erp-contact-role-controls label { display: inline-flex; align-items: center; gap: 7px; color: #34414b; font-size: 11px; }
@@ -1150,6 +1169,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .erp-contact-tab-section { min-width: 0; margin-bottom: 18px; }
 .erp-contact-tab-section > h3 { margin: 0 0 12px; padding-bottom: 7px; border-bottom: 1px solid #dfe4e7; color: #3e4a54; font-size: 11px; font-weight: 700; letter-spacing: .02em; }
 .erp-contact-tab-section > .erp-contact-field { margin: 0 0 10px; }
+.erp-contact-supplier-accounting { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 24px; }
+.erp-contact-supplier-accounting > h3, .erp-contact-supplier-accounting > .erp-contact-ledger-summary { grid-column: 1 / -1; }
+.erp-contact-ledger-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px 18px; margin-top: 4px; padding: 13px 15px; border: 1px solid #d8d5dc; border-radius: 6px; background: #faf9fb; color: #342c38; }
+.erp-contact-ledger-summary h3 { grid-column: 1 / -1; margin: 0; color: #684461; font-size: 11px; font-weight: 700; letter-spacing: .02em; }
+.erp-contact-ledger-summary > div { display: flex; flex-direction: column; gap: 4px; }
+.erp-contact-ledger-summary > div span { color: #625b66; font-size: 11px; }
+.erp-contact-ledger-summary > div strong { color: #282432; font-size: 13px; font-weight: 600; }
+.erp-contact-ledger-summary footer { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 14px; padding-top: 2px; }
+.erp-contact-ledger-summary .text-link { padding: 0; border: 0; color: #087f83; background: transparent; font: inherit; font-size: 11px; cursor: pointer; }
 .erp-contact-columns { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px 34px; }
 .erp-contact-subhead { margin-top: 24px !important; }
 .erp-contact-check { display: flex; min-height: 34px; align-items: center; gap: 8px; color: #46525c; font-size: 11px; }
@@ -1366,6 +1394,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .erp-contact-tab-grid { grid-template-columns: 1fr; }
   .erp-contact-help { grid-column: auto; }
   .erp-contact-extra, .erp-contact-columns, .erp-contact-plan-fields { grid-template-columns: 1fr; }
+  .erp-contact-supplier-accounting, .erp-contact-ledger-summary { grid-template-columns: 1fr; }
   .erp-contact-smartbar { max-width: 100%; margin: 8px 0 0; }
   .erp-contact-record-page .sales-document-toolbar { flex-wrap: wrap; }
 }
@@ -5547,22 +5576,22 @@ body[data-user-theme="dark"] .settings-user-access-row select, body[data-user-th
 .sales-order-document-page .sales-partner-field small { grid-column: 2; color: #72808a; font-size: 10px; }
 .sales-order-document-page .sales-tab-panel[data-sales-panel="order-lines"] { padding: 0 0 7px; }
 .sales-order-lines-panel .sale-order-lines { margin: 0; }
-.sales-order-document-page .purchase-native-lines [data-sale-product],
-.sales-order-document-page .purchase-native-lines [data-sale-uom],
-.sales-order-document-page .purchase-native-lines [data-sale-tax] { width: 100%; min-height: 30px; }
-.sales-order-document-page .purchase-native-lines [data-sale-qty],
-.sales-order-document-page .purchase-native-lines [data-sale-price] { width: 100%; text-align: right; }
-.sales-order-document-page .purchase-native-lines [data-sale-tax] { min-width: 0; }
-.sales-order-document-page .purchase-native-lines .sale-line-subtotal { min-width: 0; padding-right: 13px; text-align: right; font-variant-numeric: tabular-nums; }
-.sales-order-document-page .purchase-native-lines .sale-line:hover td { background: #fbfdfd; }
-.sales-order-document-page .purchase-native-lines .sale-line input:focus,
-.sales-order-document-page .purchase-native-lines .sale-line select:focus { border-color: #62b5b2; box-shadow: 0 0 0 2px #0c98901a; }
-.sales-order-document-page .purchase-native-lines { min-width: 940px; }
-.sales-order-document-page .purchase-native-lines th:nth-child(6),
-.sales-order-document-page .purchase-native-lines td:nth-child(6) { min-width: 78px; text-align: right; }
-.sales-order-document-page .purchase-native-lines th:nth-child(7),
-.sales-order-document-page .purchase-native-lines td:nth-child(7) { min-width: 112px; text-align: right; }
-.sales-order-document-page .purchase-native-lines .sales-line-discount { width: 70px; min-width: 64px; text-align: right; }
+.sales-order-document-page .sales-native-lines [data-sale-product],
+.sales-order-document-page .sales-native-lines [data-sale-uom],
+.sales-order-document-page .sales-native-lines [data-sale-tax] { width: 100%; min-height: 30px; }
+.sales-order-document-page .sales-native-lines [data-sale-qty],
+.sales-order-document-page .sales-native-lines [data-sale-price] { width: 100%; text-align: right; }
+.sales-order-document-page .sales-native-lines [data-sale-tax] { min-width: 0; }
+.sales-order-document-page .sales-native-lines .sale-line-subtotal { min-width: 0; padding-right: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+.sales-order-document-page .sales-native-lines .sale-line:hover td { background: #fbfdfd; }
+.sales-order-document-page .sales-native-lines .sale-line input:focus,
+.sales-order-document-page .sales-native-lines .sale-line select:focus { border-color: #62b5b2; box-shadow: 0 0 0 2px #0c98901a; }
+.sales-order-document-page .sales-native-lines { min-width: 940px; }
+.sales-order-document-page .sales-native-lines .sale-col-unit-price,
+.sales-order-document-page .sales-native-lines .sale-price-cell { min-width: 78px; text-align: right; }
+.sales-order-document-page .sales-native-lines .sale-col-unit-cost,
+.sales-order-document-page .sales-native-lines .sale-unit-cost-cell { min-width: 112px; text-align: right; }
+.sales-order-document-page .sales-native-lines .sales-line-discount { width: 70px; min-width: 64px; text-align: right; }
 .sales-order-document-page .purchase-order-summary { grid-template-columns: minmax(0,1fr) minmax(245px,280px); }
 .sales-order-document-page .purchase-terms > span { display: block; color: #59646f; font-size: 11px; }
 .sales-order-document-page .sales-promo-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
@@ -6178,4 +6207,398 @@ body[data-user-theme="dark"] .settings-user-access-row select, body[data-user-th
   .accounting-journal-type-grid { grid-template-columns: 1fr; gap: 11px; }
   .accounting-journal-type-card { min-height: 112px; }
   .accounting-journal-type-art { width: 94px; min-width: 74px; height: 76px; }
+}
+
+/* Keep Sales order lines readable without letting long product/unit text widen the table. */
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines {
+  width: 100%;
+  min-width: 960px;
+  table-layout: fixed;
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines th,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines td {
+  min-width: 0 !important;
+  overflow-wrap: anywhere;
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines th {
+  width: auto !important;
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines {
+  font-size: 13px;
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines th {
+  padding: 11px 10px;
+  color: #53616b;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines td {
+  padding: 9px 10px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-product],
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-qty],
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-uom],
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-price],
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-discount] {
+  font-size: 13px;
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-tax] {
+  box-sizing: border-box;
+  width: max-content !important;
+  max-width: 100%;
+  height: 24px;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid #b7b9bb;
+  border-radius: 14px;
+  background: #ececec;
+  color: #4a4d50;
+  font-size: 11px;
+  text-align: center;
+  text-align-last: center;
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-unit-cost-cell,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-margin-cell,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-margin-percent-cell,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-tax-excluded-cell,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-tax-included-cell {
+  font-size: 12px;
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-amount-cell {
+  font-size: 13px;
+  font-weight: 500;
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-col-grip { width: 2.5% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-col-line-number { width: 3% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="false"] .sale-col-description { width: 25.5% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="false"] .sale-col-quantity { width: 10% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="false"] .sale-col-unit { width: 17% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="false"] .sale-col-unit-price { width: 12% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="false"] .sale-col-taxes { width: 14% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="false"] .sale-col-discount { width: 8% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="false"] .sale-col-amount { width: 8% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="false"] .sale-col-actions { width: 3% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="true"] .sale-col-description { width: 22.5% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="true"] .sale-col-quantity { width: 10% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="true"] .sale-col-unit { width: 16% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="true"] .sale-col-unit-price { width: 12% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="true"] .sale-col-taxes { width: 14% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="true"] .sale-col-discount { width: 8% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="true"] .sale-col-amount { width: 9% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines[data-line-numbers="true"] .sale-col-actions { width: 3% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-product-cell { vertical-align: top; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-product] {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0 !important;
+  max-width: 100%;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+}
+.sales-order-document-page .sales-order-lines-panel .sale-product-description {
+  display: -webkit-box;
+  margin: 0 7px;
+  overflow: hidden;
+  color: #536171;
+  font-size: 11px;
+  font-style: italic;
+  line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.sales-order-document-page .sales-order-lines-panel .sale-product-description:empty {
+  display: none;
+}
+.sales-order-document-page .sale-line-offer-details { display: grid; min-width: 0; gap: 4px; margin-top: 3px; }
+.sales-order-document-page .sale-line-offer-details:empty { display: none; }
+.sales-order-document-page .sale-line-offer-details select { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-quantity-cell,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-unit-cell,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-col-quantity,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-col-unit { text-align: center; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-qty],
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-uom] {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0 !important;
+  text-align: center;
+  text-align-last: center;
+  font-variant-numeric: tabular-nums;
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-uom-note,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sales-line-conversion {
+  display: block;
+  max-width: 100%;
+  margin: 3px 0 0;
+  font-size: 10px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  text-align: center;
+  white-space: normal;
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-price],
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-tax],
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-discount] {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0 !important;
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-tax] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-price],
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-discount],
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-amount-cell { text-align: right; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-action-cell { text-align: center; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-action-cell .soft-icon-button { min-width: 0; padding: 2px 5px; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines th.sale-col-grip,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines td.sale-line-grip-cell { padding: 3px 2px; text-align: center; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sales-line-grip {
+  display: grid;
+  width: 23px;
+  height: 27px;
+  grid-template-columns: repeat(2, 3px);
+  grid-template-rows: repeat(3, 3px);
+  place-content: center;
+  gap: 2px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: #8b969e;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sales-line-grip i { width: 3px; height: 3px; border-radius: 50%; background: currentColor; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sales-line-grip:hover,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sales-line-grip:focus-visible { border-color: #c9dcdb; color: #078c8e; background: #f4fbfa; outline: none; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sales-line-grip:active { cursor: grabbing; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sales-line-grip:disabled { cursor: default; opacity: .45; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines tr.is-sales-line-dragging { opacity: .45; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines tr.sales-line-drop-before > td { box-shadow: inset 0 2px 0 #078c8e; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines tr.sales-line-drop-after > td { box-shadow: inset 0 -2px 0 #078c8e; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-col-variant { width: 12% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-col-unit-cost { width: 10% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-col-margin { width: 10% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-col-margin-percent { width: 9% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-col-tax-excluded,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-col-tax-included { width: 10% !important; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-unit-cost-cell,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-margin-cell,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-margin-percent-cell,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-tax-excluded-cell,
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines .sale-tax-included-cell { text-align: right; font-variant-numeric: tabular-nums; }
+.sales-order-document-page .sales-line-columns-anchor { position: relative; display: flex; justify-content: flex-end; }
+.sales-order-document-page .sales-line-column-button { display: grid; width: 27px; height: 27px; place-items: center; padding: 4px; border: 1px solid #d4dce0; border-radius: 6px; color: #3d4a52; background: #fff; cursor: pointer; }
+.sales-order-document-page .sales-line-column-button:hover,
+.sales-order-document-page .sales-line-column-button:focus-visible { border-color: #078c8e; color: #078c8e; outline: none; }
+.sales-order-document-page .sales-line-column-button svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.4; }
+.sales-line-column-popover { position: fixed; z-index: 120; width: 200px; max-height: min(470px,72vh); gap: 0; padding: 7px 0 6px; background: #fff; }
+.sales-line-column-popover > strong { padding: 4px 12px 6px; color: #59646f; font-size: 10px; }
+.sales-line-column-popover > label { min-height: 26px; gap: 7px; padding: 3px 10px; font-size: 11px; }
+.sales-line-column-popover input[type="checkbox"] { -webkit-appearance: checkbox !important; appearance: auto !important; box-sizing: border-box !important; display: inline-block !important; width: 14px !important; height: 14px !important; min-width: 14px !important; min-height: 14px !important; max-width: 14px !important; max-height: 14px !important; flex: 0 0 14px !important; margin: 0 !important; padding: 0 !important; transform: none !important; accent-color: #078c8e; }
+.sales-line-column-popover .column-reset { margin-top: 3px; padding: 7px 10px 5px; font-size: 10px; }
+.sales-order-document-page .sales-native-lines .sale-special-line > td { vertical-align: middle; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines th.sale-col-actions {
+  position: sticky;
+  right: 0;
+  z-index: 4;
+  background: var(--surface-soft);
+}
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines td.sale-action-cell {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: var(--surface);
+}
+
+/* Contacts directory: cleaner Odoo-style spacing while preserving all role and row data. */
+.contacts-page { padding: 0 16px 26px; color: #26333d; }
+.contacts-toolbar { position: relative; display: flex; min-height: 58px; align-items: center; justify-content: space-between; gap: 16px; }
+.contacts-toolbar-heading { flex: 0 0 auto; gap: 11px; }
+.contacts-toolbar-heading .action-button { min-height: 34px; padding: 6px 13px; border: 1px solid #805675; border-radius: 4px; color: #fff; background: #805675; font-size: 12px; }
+.contacts-toolbar-heading .action-button:hover { border-color: #704866; background: #704866; }
+.contacts-toolbar-heading > div { gap: 2px; }
+.contacts-toolbar-heading h1 { color: #222a32; font-size: 16px; font-weight: 500; }
+.contacts-toolbar-heading span { color: #7c8791; font-size: 11px; }
+.contacts-page .contacts-search { position: absolute; left: 50%; width: min(600px, 44vw); min-height: 38px; transform: translateX(-50%); border: 1px solid #d6dce2; border-radius: 21px; background: #fff; }
+.contacts-page .contacts-search:focus-within { border-color: #aab7c2; box-shadow: 0 0 0 2px rgba(104, 119, 132, .08); }
+.contacts-page .contacts-search input { min-height: 36px; font-size: 13px; }
+.contacts-selection-toolbar { position: relative; z-index: 1; margin-left: auto; }
+.contacts-list-tabs { min-height: 38px; gap: 2px; border-bottom-color: #d9dfe4; background: #fff; box-shadow: inset 0 -1px 0 #d9dfe4; }
+.contacts-page .contacts-list-tabs .contacts-list-tab { min-height: 38px; padding: 0 15px; border-color: transparent; border-radius: 4px 4px 0 0; color: #46515b; background: #fff; font-size: 12px; font-weight: 400; }
+.contacts-page .contacts-list-tabs .contacts-list-tab:hover { color: #087f83; background: #f5f8f8; }
+.contacts-page .contacts-list-tabs .contacts-list-tab.is-active { border-color: #d9dfe4; border-top-color: transparent; color: #805675; background: #fff; font-weight: 600; }
+.contacts-page .contacts-list-tabs .contacts-list-tab.is-active::before { height: 2px; background: #805675; }
+.contacts-page .contacts-list-tabs .contacts-list-tab > span { min-width: 18px; height: 18px; padding: 0 5px; color: #5d6872; background: #f0f2f4; font-size: 10px; }
+.contacts-page .contacts-list-tabs .contacts-list-tab.is-active > span { color: #714d70; background: #f1eaf1; }
+.contacts-list-summary { min-height: 30px; color: #6e7983; font-size: 11px; }
+.contacts-table-wrap { overflow-x: auto; border: 0; border-radius: 0; background: #fff; }
+.contacts-table { width: 100%; min-width: 850px; border-collapse: collapse; }
+.contacts-table th { height: 39px; padding: 8px 10px; border-bottom: 1px solid #dce1e6; color: #59636d; background: #fff; font-size: 12px; font-weight: 500; }
+.contacts-table td { height: 42px; padding: 6px 10px; border-bottom: 1px solid #e1e5e9; color: #26333d; font-size: 13px; }
+.contacts-table tbody tr:hover { background: #f7f9fa; }
+.contacts-table .check-cell { width: 34px; padding-right: 2px; padding-left: 8px; }
+.contacts-name-link { gap: 9px; color: #26333d; font-size: 13px; }
+.contacts-avatar { width: 25px; height: 25px; flex-basis: 25px; border-color: #d7dee4; border-radius: 5px; font-size: 9px; }
+.contacts-type-pill { min-height: 21px; padding: 3px 8px; font-size: 10px; }
+.contacts-table .action-button { min-height: 27px; padding: 4px 9px; font-size: 11px; }
+.contacts-page .contacts-empty { min-height: 250px; }
+
+@media (max-width: 760px) {
+  .contacts-page { padding: 0 10px 20px; }
+  .contacts-toolbar { align-items: stretch; flex-direction: column; gap: 10px; padding: 10px 0 12px; }
+  .contacts-toolbar-heading { min-height: 38px; }
+  .contacts-page .contacts-search { position: static; left: auto; width: 100%; transform: none; }
+  .contacts-selection-toolbar { margin-left: 0; }
+  .contacts-list-summary { min-height: 28px; }
+  .contacts-table { min-width: 850px; }
+}
+.sales-order-document-page .sales-native-lines .sale-quantity-control { display: flex; min-width: 0; align-items: center; justify-content: center; gap: 2px; }
+.sales-order-document-page .sales-native-lines .sale-quantity-control [data-sale-qty] { box-sizing: border-box; width: 100%; min-width: 0 !important; max-width: 66px; flex: 1 1 44px; }
+.sales-stock-availability-button { display: inline-grid; width: 18px; min-width: 18px; height: 22px; flex: 0 0 18px; place-items: center; padding: 0; border: 0; border-radius: 3px; background: transparent; cursor: pointer; }
+.sales-stock-availability-button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.sales-stock-availability-button.is-negative { color: #e34d4c; }
+.sales-stock-availability-button.is-positive { color: #078c91; }
+.sales-stock-availability-button:hover, .sales-stock-availability-button[aria-expanded="true"] { background: #eaf5f4; }
+.sales-stock-availability-popover { position: fixed; z-index: 1400; width: 232px; padding: 12px 13px 10px; border: 1px solid #dce1e4; border-radius: 12px; color: #20262c; background: #fff; box-shadow: 0 9px 25px rgba(34,45,54,.2); font-size: 12px; }
+.sales-stock-availability-popover::after { position: absolute; left: calc(50% - 7px); width: 12px; height: 12px; border: 1px solid #dce1e4; background: #fff; content: ""; transform: rotate(45deg); }
+.sales-stock-availability-popover.is-above-anchor::after { bottom: -7px; border-top: 0; border-left: 0; }
+.sales-stock-availability-popover.is-below-anchor::after { top: -7px; border-right: 0; border-bottom: 0; }
+.sales-stock-availability-popover > strong { display: block; margin-bottom: 12px; font-size: 13px; font-weight: 650; }
+.sales-stock-availability-metric { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; margin: 0 4px 13px; }
+.sales-stock-availability-metric b { font-size: 12px; font-weight: 650; }
+.sales-stock-availability-metric strong { color: #078a86; font-size: 12px; font-weight: 700; text-align: right; }
+.sales-stock-availability-metric strong.is-negative { color: #e34d4c; }
+.sales-stock-availability-metric span { grid-column: 1 / -1; color: #3f474d; font-size: 12px; line-height: 1.35; }
+.sales-stock-view-forecast { display: block; min-height: 38px; margin: 0; padding: 7px 11px; border: 2px solid #168f90; border-radius: 8px; color: #008b91; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
+.sales-stock-view-forecast:focus-visible { outline: 2px solid #75c9c7; outline-offset: 2px; }
+.sales-stock-forecast-page { min-height: calc(100vh - 76px); padding: 18px 16px 42px; color: #18303a; background: #fff; }
+.sales-stock-forecast-toolbar { display: flex; min-height: 42px; align-items: center; justify-content: space-between; gap: 18px; margin: 0 0 28px; }
+.sales-stock-forecast-breadcrumbs, .sales-stock-forecast-actions { display: flex; align-items: center; gap: 10px; }
+.sales-stock-forecast-breadcrumbs { color: #66737d; font-size: 13px; }
+.sales-stock-forecast-breadcrumbs button { padding: 0; border: 0; color: #167f88; background: transparent; font: inherit; cursor: pointer; }
+.sales-stock-forecast-breadcrumbs strong { color: #34414a; font-weight: 500; }
+.sales-stock-forecast-warehouse { margin-left: 18px; padding: 8px 12px; border: 1px solid #d6dde1; border-radius: 7px; color: #2f414b; font-size: 13px; white-space: nowrap; }
+.sales-stock-forecast-summary { display: flex; min-height: 80px; align-items: flex-start; justify-content: space-between; gap: 30px; margin-bottom: 20px; }
+.sales-stock-forecast-product h1 { margin: 0 0 5px; color: #008e92; font-size: 18px; font-weight: 600; }
+.sales-stock-forecast-product > span { color: #243640; font-size: 13px; }
+.sales-stock-forecast-metrics { display: flex; align-items: center; gap: clamp(12px, 2vw, 32px); }
+.sales-stock-forecast-metrics > div { display: grid; gap: 5px; min-width: 82px; text-align: center; }
+.sales-stock-forecast-metrics > div strong { color: #111a20; font-size: 17px; font-weight: 550; font-variant-numeric: tabular-nums; }
+.sales-stock-forecast-metrics > div:first-child strong { color: #008e92; }
+.sales-stock-forecast-metrics > div span { color: #40515a; font-size: 12px; }
+.sales-stock-forecast-metrics > b { color: #18242b; font-size: 17px; font-weight: 500; }
+.sales-stock-forecast-metrics .is-negative strong, .sales-stock-forecast-metrics .is-negative span { color: #e34d4c; }
+.sales-stock-forecast-summary-numbers { display: grid; justify-items: end; gap: 14px; }
+.sales-stock-forecast-replenishment { margin: 0; color: #263740; font-size: 12px; font-weight: 600; text-align: right; }
+.sales-stock-forecast-replenishment strong { color: #1689a6; }
+.sales-stock-forecast-chart-toolbar { display: flex; min-height: 46px; align-items: center; gap: 10px; padding: 0 12px; border: 1px solid #e1e6e8; border-bottom: 0; background: #fafbfc; }
+.sales-stock-forecast-chart-toolbar > span:first-child { color: #4b5962; font-size: 13px; font-weight: 600; }
+.sales-stock-forecast-chart-range { margin-left: auto; color: #63717b; font-size: 12px; }
+.sales-stock-forecast-chart-card { padding: 15px 12px 10px; border: 1px solid #e1e6e8; background: #fff; }
+.sales-stock-forecast-chart-scroll { width: 100%; overflow-x: auto; }
+.sales-stock-forecast-chart { display: block; width: 100%; min-width: 920px; height: auto; }
+.sales-forecast-grid-line { stroke: #dfe4e7; stroke-width: 1; }
+.sales-forecast-zero-line { stroke: #98a3aa; stroke-width: 1; }
+.sales-forecast-tick { stroke: #cbd2d7; stroke-width: 1; }
+.sales-forecast-axis-label { fill: #37434b; font: 11px Arial, sans-serif; }
+.sales-forecast-date-label { font-size: 10px; }
+.sales-forecast-line { fill: none; stroke: #349eea; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.sales-forecast-point { fill: #349eea; stroke: #fff; stroke-width: 1; }
+.sales-stock-forecast-legend { display: flex; max-width: 270px; align-items: center; justify-content: center; gap: 8px; margin: 2px auto 0; overflow: hidden; color: #293640; font-size: 11px; white-space: nowrap; }
+.sales-stock-forecast-legend i { width: 18px; height: 12px; flex: 0 0 18px; border-radius: 4px; background: #349eea; }
+.sales-stock-forecast-legend span { overflow: hidden; text-overflow: ellipsis; }
+.sales-stock-forecast-movements { margin-top: 24px; overflow-x: auto; }
+.sales-stock-forecast-movements table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px; }
+.sales-stock-forecast-movements th, .sales-stock-forecast-movements td { padding: 10px 14px; border: 1px solid #d5dadd; text-align: left; }
+.sales-stock-forecast-movements thead th { border-bottom: 1px solid #cfd5d9; color: #35444d; background: #fff; font-weight: 600; }
+.sales-stock-forecast-movements td.numeric-cell, .sales-stock-forecast-movements th.numeric-cell { text-align: right; font-variant-numeric: tabular-nums; }
+.sales-stock-forecast-movements .sales-forecast-availability { color: #68757d; }
+.sales-stock-forecast-movements .sales-forecast-availability.is-unavailable, .sales-stock-forecast-movements .is-negative { color: #e34d4c; }
+.sales-stock-forecast-movements tr.is-unavailable td:nth-child(3) { background: #fbdada; }
+.sales-stock-forecast-movements .sales-forecast-total-row { background: #dedfe0; font-weight: 650; }
+.sales-stock-forecast-movements .sales-forecast-pending-row { color: #067d88; background: #d4edf0; }
+.sales-stock-forecast-movements .sales-forecast-empty { padding: 24px; color: #71808a; text-align: center; }
+.sales-order-document-page .sales-order-lines-panel .sales-native-lines [data-sale-product],
+.sales-order-document-page .sales-order-lines-panel .sale-line-offer-details select { width: max-content !important; max-width: 100%; }
+.purchase-document-page .purchase-native-lines th { color: #111; font-size: 12px; }
+.purchase-document-page .purchase-native-lines [data-purchase-product] { color: #111; font-size: 12px; font-weight: 700; }
+.purchase-document-page .purchase-native-lines .purchase-product-note { color: #66717a; font-size: 9px; font-style: italic; }
+.purchase-document-page .purchase-native-lines { min-width: 980px; table-layout: fixed; }
+.purchase-document-page .purchase-native-lines .sale-col-grip { width: 28px; }
+.purchase-document-page .purchase-native-lines .sale-col-description { width: 38%; }
+.purchase-document-page .purchase-native-lines .sale-col-variant { width: 12%; }
+.purchase-document-page .purchase-native-lines .sale-col-quantity { width: 8%; }
+.purchase-document-page .purchase-native-lines .sale-col-unit { width: 8%; }
+.purchase-document-page .purchase-native-lines .sale-col-unit-price { width: 10%; }
+.purchase-document-page .purchase-native-lines .sale-col-unit-cost { width: 9%; }
+.purchase-document-page .purchase-native-lines .sale-col-margin { width: 9%; }
+.purchase-document-page .purchase-native-lines .sale-col-margin-percent { width: 9%; }
+.purchase-document-page .purchase-native-lines .sale-col-taxes { width: 12%; }
+.purchase-document-page .purchase-native-lines .sale-col-discount { width: 8%; }
+.purchase-document-page .purchase-native-lines .sale-col-tax-excluded,
+.purchase-document-page .purchase-native-lines .sale-col-tax-included { width: 10%; }
+.purchase-document-page .purchase-native-lines .sale-col-amount { width: 11%; }
+.purchase-document-page .purchase-native-lines .sale-col-actions { width: 34px; }
+.purchase-document-page .purchase-native-lines th.sale-col-actions { position: sticky; right: 0; z-index: 4; background: var(--surface-soft); }
+.purchase-document-page .purchase-native-lines td.sale-action-cell { position: sticky; right: 0; z-index: 2; background: var(--surface); text-align: center; }
+.purchase-document-page .purchase-native-lines td.sale-line-grip-cell { width: 28px; padding: 3px 2px; text-align: center; }
+.purchase-document-page .purchase-native-lines .sales-line-grip { display: grid; width: 23px; height: 27px; grid-template-columns: repeat(2, 3px); grid-template-rows: repeat(3, 3px); place-content: center; gap: 2px; padding: 0; border: 1px solid transparent; border-radius: 5px; color: #8b969e; background: transparent; cursor: grab; }
+.purchase-document-page .purchase-native-lines .sales-line-grip i { width: 3px; height: 3px; border-radius: 50%; background: currentColor; }
+.purchase-document-page .purchase-native-lines .sales-line-grip:hover,
+.purchase-document-page .purchase-native-lines .sales-line-grip:focus-visible { border-color: #c9dcdb; color: #078c8e; background: #f4fbfa; outline: none; }
+.purchase-document-page .purchase-native-lines .sales-line-grip:disabled { cursor: default; opacity: .45; }
+.purchase-document-page .purchase-native-lines .purchase-special-line .sales-line-grip { cursor: default; }
+.purchase-document-page .purchase-native-lines [data-line-qty],
+.purchase-document-page .purchase-native-lines [data-line-uom] { box-sizing: border-box; width: 100%; min-width: 0; text-align: center; text-align-last: center; font-variant-numeric: tabular-nums; }
+.purchase-document-page .purchase-native-lines [data-line-price],
+.purchase-document-page .purchase-native-lines [data-line-tax],
+.purchase-document-page .purchase-native-lines [data-line-discount] { box-sizing: border-box; width: 100%; min-width: 0; }
+.purchase-document-page .purchase-native-lines [data-line-price],
+.purchase-document-page .purchase-native-lines [data-line-discount],
+.purchase-document-page .purchase-native-lines .sale-amount-cell,
+.purchase-document-page .purchase-native-lines .sale-unit-cost-cell,
+.purchase-document-page .purchase-native-lines .sale-margin-cell,
+.purchase-document-page .purchase-native-lines .sale-margin-percent-cell,
+.purchase-document-page .purchase-native-lines .sale-tax-excluded-cell,
+.purchase-document-page .purchase-native-lines .sale-tax-included-cell { text-align: right; font-variant-numeric: tabular-nums; }
+.purchase-document-page .purchase-native-lines .sale-quantity-cell,
+.purchase-document-page .purchase-native-lines .sale-unit-cell { text-align: center; }
+.purchase-document-page .purchase-native-lines .sale-quantity-control { display: flex; min-width: 0; align-items: center; justify-content: center; gap: 3px; }
+.purchase-document-page .purchase-native-lines .sale-quantity-control [data-line-qty] { flex: 1 1 auto; }
+.purchase-document-page .purchase-native-lines .sale-stock-availability-button { flex: 0 0 18px; }
+.purchase-document-page .purchase-native-lines .sales-line-conversion { display: block; max-width: 100%; margin: 3px 0 0; overflow-wrap: anywhere; font-size: 10px; line-height: 1.3; text-align: center; white-space: normal; }
+.purchase-document-page .purchase-native-lines .shared-order-line-detail { display: grid; gap: 1px; min-width: 0; padding: 0 7px; }
+.purchase-document-page .purchase-native-lines .purchase-product-note { display: block; overflow: hidden; padding: 0; color: #66717a; font-size: 10px; font-style: italic; text-overflow: ellipsis; white-space: nowrap; }
+.purchase-document-page .purchase-native-lines .sale-product-select { box-sizing: border-box; width: max-content; max-width: 100%; min-width: 0; overflow: hidden; color: #111; font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.purchase-document-page .purchase-native-lines .shared-order-line-delete { display: inline-grid; min-width: 26px; width: 26px; height: 27px; place-items: center; padding: 4px; color: #25333b; }
+.purchase-document-page .purchase-native-lines .shared-order-line-delete svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.45; stroke-linecap: round; stroke-linejoin: round; }
+.purchase-document-page .purchase-line-settings { width: 27px; height: 27px; padding: 4px; }
+.purchase-document-page .purchase-line-settings svg { width: 17px; height: 17px; }
+.purchase-document-page .purchase-native-lines .purchase-special-line > td { vertical-align: middle; }
+.purchase-document-page .purchase-native-lines tr.is-sales-line-dragging { opacity: .45; }
+.purchase-document-page .purchase-native-lines tr.sales-line-drop-before > td { box-shadow: inset 0 2px 0 #078c8e; }
+.purchase-document-page .purchase-native-lines tr.sales-line-drop-after > td { box-shadow: inset 0 -2px 0 #078c8e; }
+.purchase-document-page .purchase-line-settings.sales-line-column-button { display: grid; place-items: center; border: 1px solid #d4dce0; border-radius: 6px; color: #3d4a52; background: #fff; cursor: pointer; }
+.purchase-document-page .purchase-line-settings.sales-line-column-button:hover { border-color: #078c8e; color: #078c8e; }
+.sales-order-document-page .shared-order-line-delete { display: inline-grid; min-width: 26px; width: 26px; height: 27px; place-items: center; padding: 4px; color: #25333b; }
+.sales-order-document-page .shared-order-line-delete svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.45; stroke-linecap: round; stroke-linejoin: round; }
+@media (max-width: 960px) {
+  .sales-stock-forecast-toolbar, .sales-stock-forecast-summary { align-items: flex-start; flex-direction: column; }
+  .sales-stock-forecast-actions { flex-wrap: wrap; }
+  .sales-stock-forecast-warehouse { margin-left: 0; }
+  .sales-stock-forecast-metrics { width: 100%; justify-content: space-between; gap: 8px; }
+  .sales-stock-forecast-summary-numbers { width: 100%; justify-items: stretch; }
+  .sales-stock-forecast-replenishment { text-align: left; }
 }
